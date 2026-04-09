@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLI Research Agent — Project Deep Dive | The Machinist</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <meta name="description" content="A CLI research agent where a language model drives a multi-step research workflow autonomously, built with DeepSeek API, Tavily, and direct tool-calling, no frameworks.">
+    <meta name="keywords" content="AI Agent, LLM, Tool Calling, DeepSeek, Tavily, Python, CLI, Research Agent, Agentic AI">
+    <meta name="author" content="Anudeep Reddy">
+
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="CLI Research Agent — Project Deep Dive | The Machinist">
+    <meta property="og:description" content="A language model that drives a multi-step research workflow autonomously. No frameworks, just direct API calls and a loop.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="shared.css">
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
+
+    <style>
+        /* ── Page header ── */
+        .cra-header {
+            text-align: left;
+            padding: calc(var(--spacing-xl) + 60px) var(--spacing-md) var(--spacing-lg);
+            background: var(--section-bg);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .cra-header .container {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .cra-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+        .cra-breadcrumb a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        .cra-breadcrumb a:hover { color: var(--text-color); }
+        .cra-breadcrumb-sep { opacity: 0.4; }
+        .cra-series-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+        .cra-header h1 {
+            font-size: clamp(1.6rem, 4vw, 2.2rem);
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            line-height: 1.2;
+            margin-bottom: 14px;
+            color: var(--text-color);
+        }
+        .cra-subtitle {
+            font-size: 0.975rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            max-width: 600px;
+            margin: 0;
+            font-style: normal;
+        }
+
+        /* ── Tech tags in header ── */
+        .cra-tech-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 20px;
+        }
+        .cra-tech-tag {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 3px 10px;
+            letter-spacing: 0.03em;
+        }
+
+        /* ── Body ── */
+        .cra-body {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 52px 24px 80px;
+        }
+        .cra-body p {
+            font-size: 0.96rem;
+            line-height: 1.82;
+            color: var(--text-color);
+            margin-bottom: 18px;
+        }
+        .cra-body h2 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin: 44px 0 14px;
+            letter-spacing: -0.01em;
+            color: var(--text-color);
+        }
+        .cra-body h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin: 30px 0 10px;
+            color: var(--text-color);
+        }
+        .cra-body ul, .cra-body ol {
+            padding-left: 22px;
+            margin-bottom: 18px;
+        }
+        .cra-body li {
+            font-size: 0.95rem;
+            line-height: 1.78;
+            color: var(--text-color);
+            margin-bottom: 6px;
+        }
+        .cra-body strong {
+            color: var(--text-color);
+            font-weight: 700;
+        }
+
+        /* ── TL;DR box ── */
+        .cra-tldr {
+            border-left: 3px solid var(--text-color);
+            background: var(--section-bg);
+            border-radius: 0 6px 6px 0;
+            padding: 18px 22px;
+            margin: 22px 0 32px;
+        }
+        .cra-tldr p {
+            margin: 0;
+            font-size: 0.95rem;
+            line-height: 1.78;
+        }
+
+        /* ── Code block ── */
+        .cra-code-wrap {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 24px 0;
+        }
+        .cra-code-label {
+            background: var(--section-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px 16px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .cra-code-label::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+        .cra-code-block {
+            background: #0d0d0d;
+            color: #e0e0e0;
+            padding: 20px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.82rem;
+            line-height: 1.7;
+        }
+        [data-theme="light"] .cra-code-block {
+            background: #1a1a1a;
+            color: #d4d4d4;
+        }
+        .cra-code-block code {
+            display: block;
+            white-space: pre;
+        }
+        /* Syntax colours */
+        .tok-comment { color: #6a9955; }
+        .tok-keyword { color: #569cd6; }
+        .tok-string  { color: #ce9178; }
+        .tok-arrow   { color: #9cdcfe; }
+        .tok-step    { color: #dcdcaa; }
+
+        /* ── Architecture diagram ── */
+        .cra-pipeline {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 24px 0 32px;
+        }
+        .cra-pipeline-label {
+            background: var(--section-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 18px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        .cra-pipeline-body {
+            padding: 18px 20px;
+            background: var(--bg-color);
+        }
+        .cra-pipe-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 8px 0;
+        }
+        .cra-pipe-num {
+            flex-shrink: 0;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--text-color);
+            color: var(--bg-color);
+            font-size: 0.68rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+        }
+        .cra-pipe-text {
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: var(--text-color);
+        }
+        .cra-pipe-text span {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+        }
+        .cra-pipe-connector {
+            padding-left: 11px;
+            font-size: 0.8rem;
+            color: var(--border-color);
+            line-height: 1;
+            user-select: none;
+            letter-spacing: 0;
+        }
+
+        /* ── Layer cards ── */
+        .cra-layers {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin: 18px 0 28px;
+        }
+        .cra-layer-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 18px 20px;
+            background: var(--bg-color);
+        }
+        .cra-layer-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .cra-layer-badge {
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            background: var(--text-color);
+            color: var(--bg-color);
+            padding: 3px 8px;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
+        .cra-layer-file {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+        .cra-layer-card p {
+            margin: 0;
+            font-size: 0.875rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+
+        /* ── Takeaways grid ── */
+        .cra-takeaways {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 12px;
+            margin: 18px 0 28px;
+        }
+        .cra-takeaway-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px 18px;
+            background: var(--bg-color);
+        }
+        .cra-takeaway-num {
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        .cra-takeaway-card h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin: 0 0 6px;
+            color: var(--text-color);
+        }
+        .cra-takeaway-card p {
+            font-size: 0.82rem !important;
+            line-height: 1.65 !important;
+            color: var(--text-secondary) !important;
+            margin: 0 !important;
+        }
+
+        /* ── Limitations list ── */
+        .cra-limitation {
+            border-left: 3px solid var(--border-color);
+            padding: 12px 16px;
+            margin: 10px 0;
+            border-radius: 0 6px 6px 0;
+            background: var(--section-bg);
+        }
+        .cra-limitation h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin: 0 0 4px;
+            color: var(--text-color);
+        }
+        .cra-limitation p {
+            margin: 0 !important;
+            font-size: 0.85rem !important;
+            line-height: 1.65 !important;
+            color: var(--text-secondary) !important;
+        }
+
+        /* ── Divider ── */
+        .cra-hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 40px 0;
+        }
+
+        /* ── Inline code ── */
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85em;
+            background: var(--section-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            padding: 1px 5px;
+            color: var(--text-color);
+        }
+
+        @media (max-width: 600px) {
+            .cra-body { padding: 36px 16px 60px; }
+            .cra-header { padding: calc(var(--spacing-xl) + 60px) 16px 32px; }
+            .cra-takeaways { grid-template-columns: 1fr; }
+            .cra-code-block { font-size: 0.75rem; padding: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <nav id="nav" role="navigation" aria-label="Main navigation">
+        <div class="container">
+            <div class="nav-container">
+                <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <ul>
+                    <li><a href="index.html#projects">Projects</a></li>
+                    <li><a href="index.html#about">About</a></li>
+                    <li><a href="index.html#skills">Skills</a></li>
+                    <li><a href="index.html#learning-log">Learning Log</a></li>
+                    <li><a href="index.html#contact">Contact</a></li>
+                </ul>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                    <div class="toggle-slider">
+                        <svg class="toggle-icon sun-icon" viewBox="0 0 24 24" style="display: block;">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2"/>
+                            <line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" stroke-width="2"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" stroke-width="2"/>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" stroke-width="2"/>
+                            <line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" stroke-width="2"/>
+                            <line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2"/>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" stroke-width="2"/>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <svg class="toggle-icon moon-icon" viewBox="0 0 24 24" style="display: none;">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </div>
+                </button>
+            </div>
+        </div>
+        <div class="mobile-menu">
+            <div class="mobile-menu-header">
+                <button class="close-menu" aria-label="Close menu">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <a href="index.html#projects">Projects</a>
+            <a href="index.html#about">About</a>
+            <a href="index.html#skills">Skills</a>
+            <a href="index.html#learning-log">Learning Log</a>
+            <a href="index.html#contact">Contact</a>
+        </div>
+    </nav>
+
+    <header class="cra-header">
+        <div class="container">
+            <nav class="cra-breadcrumb" aria-label="Breadcrumb">
+                <a href="index.html#learning-log">Learning Log</a>
+                <span class="cra-breadcrumb-sep">/</span>
+                <span>Project Deep Dives</span>
+                <span class="cra-breadcrumb-sep">/</span>
+                <span style="color: var(--text-color); font-weight: 500;">CLI Research Agent</span>
+            </nav>
+            <div class="cra-series-label">Project Deep Dive</div>
+            <h1>CLI Research Agent</h1>
+            <p class="cra-subtitle">
+                A language model that drives a multi-step research workflow autonomously,
+                built without frameworks, through direct API calls where every part of the loop is visible and controllable.
+            </p>
+            <div class="cra-tech-row">
+                <span class="cra-tech-tag">Python</span>
+                <span class="cra-tech-tag">DeepSeek API</span>
+                <span class="cra-tech-tag">Tavily</span>
+                <span class="cra-tech-tag">BeautifulSoup</span>
+                <span class="cra-tech-tag">asyncio</span>
+                <span class="cra-tech-tag">Tool Calling</span>
+            </div>
+        </div>
+    </header>
+
+    <main id="main">
+        <div class="cra-body">
+
+            <!-- TL;DR -->
+            <h2>TL;DR</h2>
+            <div class="cra-tldr">
+                <p>
+                    Give it a question. It decides what to search for, which pages to read,
+                    what numbers to verify, and how to structure the final output, without you directing each step.
+                    No framework. No abstraction layer hiding the loop. Just direct API calls, a messages array,
+                    and a control loop that runs until the model stops calling tools.
+                </p>
+            </div>
+
+            <p>
+                This is different from asking a chatbot a question. A chatbot generates an answer from training data.
+                This agent actively goes out, reads current sources, and synthesizes what it finds.
+                The output is traceable to real URLs. The reasoning happens in steps and it is displayed in real-time.
+            </p>
+            <p>
+                The project was built to understand how agents actually work at the mechanical level,
+                not through a framework that hides the implementation, but through direct API calls
+                where every part of the loop is visible and controllable.
+            </p>
+
+            <div class="cra-hr"></div>
+
+            <!-- Pipeline -->
+            <h2>The Full Pipeline</h2>
+            <p>
+                Here is what happens from the moment you press Enter to the moment a report exists on disk.
+            </p>
+
+            <div class="cra-pipeline">
+                <div class="cra-pipeline-label">Agent Execution Flow</div>
+                <div class="cra-pipeline-body">
+                    <div class="cra-pipe-step">
+                        <div class="cra-pipe-num">1</div>
+                        <div class="cra-pipe-text">
+                            You type a question
+                            <br><span><code>main.py</code> sends it to DeepSeek API with a system prompt and tool schemas</span>
+                        </div>
+                    </div>
+                    <div class="cra-pipe-connector">│</div>
+                    <div class="cra-pipe-step">
+                        <div class="cra-pipe-num">2</div>
+                        <div class="cra-pipe-text">
+                            DeepSeek returns a <code>tool_use</code> response
+                            <br><span>"call web_search with this query"</span>
+                        </div>
+                    </div>
+                    <div class="cra-pipe-connector">│</div>
+                    <div class="cra-pipe-step">
+                        <div class="cra-pipe-num">3</div>
+                        <div class="cra-pipe-text">
+                            <code>execute_tool("web_search", {"query": "..."})</code>
+                            <br><span>Calls Tavily API → returns titles, URLs, and content snippets for top 5 results</span>
+                        </div>
+                    </div>
+                    <div class="cra-pipe-connector">│</div>
+                    <div class="cra-pipe-step">
+                        <div class="cra-pipe-num">4</div>
+                        <div class="cra-pipe-text">
+                            Result injected back into the messages array as a tool result
+                            <br><span>DeepSeek reads results, picks 3–4 URLs, returns: "call fetch_page with these URLs"</span>
+                        </div>
+                    </div>
+                    <div class="cra-pipe-connector">│</div>
+                    <div class="cra-pipe-step">
+                        <div class="cra-pipe-num">5</div>
+                        <div class="cra-pipe-text">
+                            All URLs fetched in parallel via async httpx
+                            <br><span>BeautifulSoup parses HTML, strips noise, extracts up to 4,000 chars per page</span>
+                        </div>
+                    </div>
+                    <div class="cra-pipe-connector">│</div>
+                    <div class="cra-pipe-step">
+                        <div class="cra-pipe-num">6</div>
+                        <div class="cra-pipe-text">
+                            Full page content injected into messages array
+                            <br><span>DeepSeek may call <code>calculate</code> for numerical derivations</span>
+                        </div>
+                    </div>
+                    <div class="cra-pipe-connector">│</div>
+                    <div class="cra-pipe-step">
+                        <div class="cra-pipe-num">7</div>
+                        <div class="cra-pipe-text">
+                            DeepSeek calls <code>write_report</code> with title, summary, key_points, sources
+                            <br><span>Markdown file written to <code>reports/</code> with a timestamp filename</span>
+                        </div>
+                    </div>
+                    <div class="cra-pipe-connector">│</div>
+                    <div class="cra-pipe-step">
+                        <div class="cra-pipe-num">8</div>
+                        <div class="cra-pipe-text">
+                            Agent loop terminates. Report exists on disk.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p>
+                Every step above is one iteration of the agent loop in <code>main.py</code>.
+                The loop runs until the model stops calling tools or until it calls <code>write_report</code>.
+            </p>
+
+            <div class="cra-hr"></div>
+
+            <!-- Architecture -->
+            <h2>System Architecture</h2>
+            <p>
+                The project is split into three layers, each with a clear responsibility.
+            </p>
+
+            <div class="cra-layers">
+                <div class="cra-layer-card">
+                    <div class="cra-layer-card-header">
+                        <span class="cra-layer-badge">Layer 1</span>
+                        <strong class="cra-layer-file">main.py — the agent loop</strong>
+                    </div>
+                    <p>
+                        The control layer. It owns the conversation state, the messages array that grows with each
+                        tool call and result. It calls the API, reads the response, decides what to do next, and drives
+                        the loop forward. The core logic is about 30 lines of Python inside a <code>for</code> loop.
+                        It checks <code>finish_reason</code> from the API response: if <code>stop</code>, the model is done;
+                        if tool calls exist, the loop executes each one, appends results, and calls the API again.
+                        Nothing in this layer does any actual work. It only orchestrates.
+                    </p>
+                </div>
+                <div class="cra-layer-card">
+                    <div class="cra-layer-card-header">
+                        <span class="cra-layer-badge">Layer 2</span>
+                        <strong class="cra-layer-file">src/research_agent/tools.py — execution</strong>
+                    </div>
+                    <p>
+                        The execution layer. Receives a tool name and arguments from the loop and does the actual work:
+                        hitting the Tavily API, fetching web pages, evaluating math, writing files.
+                        Each tool is an isolated function. The dispatcher <code>execute_tool</code> routes by name.
+                        This separation means you can improve any individual tool without touching the loop logic,
+                        and add new tools without modifying anything except this file and the tool schema in <code>main.py</code>.
+                    </p>
+                </div>
+                <div class="cra-layer-card">
+                    <div class="cra-layer-card-header">
+                        <span class="cra-layer-badge">Layer 3</span>
+                        <strong class="cra-layer-file">src/research_agent/config.py — configuration</strong>
+                    </div>
+                    <p>
+                        Handles client initialization and environment variables.
+                        Keeps credentials out of application logic.
+                    </p>
+                </div>
+            </div>
+
+            <div class="cra-hr"></div>
+
+            <!-- Design Rationale -->
+            <h2>Design Rationale</h2>
+
+            <h3>The messages array as state</h3>
+            <p>
+                The OpenAI-compatible API is stateless. It remembers nothing between calls.
+                Everything the model knows about the current task — the original question, search results,
+                page content, its own reasoning, lives in the messages array that you build and pass with every request.
+            </p>
+            <p>
+                This makes the messages array the most important data structure in the whole system.
+                Growing it correctly (assistant message before tool results, <code>tool_call_id</code> matching,
+                no orphaned messages) is what keeps the API from throwing 400 errors.
+                Trimming it incorrectly is what causes context loss and goal drift.
+            </p>
+
+            <h3>Tool schemas as behaviour contracts</h3>
+            <p>
+                The tool schemas in <code>TOOLS</code> are not just type definitions, they are part of the prompt.
+                The model reads the <code>description</code> field to decide when to call a tool,
+                and reads the parameter descriptions to decide how to call it.
+                A vague description produces inconsistent tool selection.
+                A precise description with "use when X, do not use when Y" collapses the probability distribution toward correct usage.
+            </p>
+            <p>
+                This is why the <code>write_report</code> schema explicitly says
+                "each key point must be 2–3 sentences with specifics."
+                The model treats schema descriptions as instructions, not just type hints.
+            </p>
+
+            <h3>Async page fetching</h3>
+            <p>
+                Pages are fetched in parallel using <code>asyncio.gather</code>.
+                Without this, fetching four URLs sequentially at 1–2 seconds each would add 4–8 seconds to every run.
+                With parallel fetching, all four complete in roughly the time the slowest one takes.
+            </p>
+            <p>
+                The BeautifulSoup parsing strips <code>nav</code>, <code>footer</code>, <code>aside</code>,
+                <code>script</code>, and <code>style</code> tags before extracting text.
+                Without this, the extracted content is dominated by navigation menus, cookie notices, and sidebar links,
+                noise that pollutes the model's context and reduces report quality.
+            </p>
+
+            <h3>Safe expression evaluation</h3>
+            <p>
+                The agent can generate any string as tool arguments.
+                If <code>calculate</code> used Python's built-in <code>eval()</code>,
+                a compromised or hallucinated expression like <code>__import__('os').system('rm -rf /')</code>
+                would execute silently.
+                The AST-based evaluator parses the expression into a syntax tree and walks it node by node,
+                only allowing numeric literals and five arithmetic operators.
+                Everything else raises an error before execution. This is a minimal sandbox,
+                enough protection for arithmetic in a research agent.
+            </p>
+
+            <h3>Streaming</h3>
+            <p>
+                The API supports returning tokens as they are generated rather than waiting for the complete response.
+                Streaming doesn't change the final output, it changes when you see it.
+                For an agent that might spend 15 seconds reasoning before calling a tool,
+                streaming makes the difference between a terminal that appears frozen and one that shows the model's thinking as it happens.
+                It also has a practical debugging benefit: you can see if the model is going off-track mid-thought
+                and kill the process before it completes a bad tool call.
+            </p>
+
+            <div class="cra-hr"></div>
+
+            <!-- Challenges -->
+            <h2>Challenges &amp; Limitations</h2>
+
+            <div class="cra-limitation">
+                <h4>Blocked page content</h4>
+                <p>Many URLs return JavaScript-rendered pages or actively block automated requests.
+                <code>httpx</code> cannot execute JavaScript, it fetches raw HTML.
+                The current fallback is a <code>[Content too short or blocked]</code> string.
+                The fix is either a JavaScript-capable fetcher (Playwright or Playwright-stealth)
+                or retrying with alternative URLs from the search results.</p>
+            </div>
+
+            <div class="cra-limitation">
+                <h4>Context window as a constraint</h4>
+                <p>Every tool result gets appended to the messages array. A run that fetches four pages at 4,000 chars each
+                adds roughly 16,000 characters (~ around 5,000 tokens) before the model writes the report.
+                As the context grows, older content (like the original question) receives lower attention weight.
+                On long runs, the model can lose track of the original goal and optimize for whatever is most recent.
+                The current system has no rolling summarization or context compression.</p>
+            </div>
+
+            <div class="cra-limitation">
+                <h4>The model cannot verify facts</h4>
+                <p>Everything in the report comes from what the fetched pages say. If a page contains an error,
+                the model will repeat it confidently. The agent has no cross-referencing logic,
+                a citation tells you where a claim came from, not whether it is true.</p>
+            </div>
+
+            <div class="cra-limitation">
+                <h4>Single-pass research</h4>
+                <p>The agent searches once, fetches once, and writes.
+                If the search results are poor for a given query, the report is poor.
+                There is no loop that evaluates the fetched content and decides to search again with a refined query.
+                This is a fundamental architectural limitation of the current design.</p>
+            </div>
+
+            <div class="cra-limitation">
+                <h4>Latency</h4>
+                <p>A complete run takes 40–70 seconds. Most of this is model API latency on the DeepSeek side, not local computation.
+                Page fetching adds 2–5 seconds. There is no caching of results between runs,
+                running the same question twice triggers the full pipeline again.</p>
+            </div>
+
+            <div class="cra-hr"></div>
+
+            <!-- Key Takeaways -->
+            <h2>Key Takeaways</h2>
+            <p>
+                Building this from scratch without a framework makes one thing clear:
+                <strong>an agent is a loop.</strong> The model does not autonomously run.
+                Your code calls it, reads its output, does work, and calls it again.
+                The intelligence is the model's; the control flow is yours.
+            </p>
+
+            <div class="cra-takeaways">
+                <div class="cra-takeaway-card">
+                    <div class="cra-takeaway-num">01</div>
+                    <h4>An agent is a loop</h4>
+                    <p>The model doesn't run autonomously. Your code calls it, reads output, does work, calls again. The control flow is yours.</p>
+                </div>
+                <div class="cra-takeaway-card">
+                    <div class="cra-takeaway-num">02</div>
+                    <h4>Mismatched IDs break everything</h4>
+                    <p>A mismatched <code>tool_call_id</code> throws a 400. A trimmed message array causes goal drift. These are real bugs you hit in the first few runs.</p>
+                </div>
+                <div class="cra-takeaway-card">
+                    <div class="cra-takeaway-num">03</div>
+                    <h4>Vague schemas = wrong tool calls</h4>
+                    <p>A vague tool description causes wrong tool selection. Precision in schema descriptions is direct prompt engineering.</p>
+                </div>
+                <div class="cra-takeaway-card">
+                    <div class="cra-takeaway-num">04</div>
+                    <h4>Debug through the messages array</h4>
+                    <p>Reading the messages array to understand why a token sequence produced a particular tool call is the foundation of understanding agents.</p>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin: 3rem 0;">
+                <p>
+                    <strong>
+                        <a href="https://github.com/anudeepreddy332/cli-research-agent"
+                           target="_blank"
+                           rel="noopener"
+                           style="font-size: 1.25rem;">
+                           → View the CLI Research Agent on GitHub
+                        </a>
+                    </strong>
+                </p>
+            </div>
+
+            <div class="cra-hr"></div>
+
+            <!-- Code snippet -->
+            <h2>The Loop in ~30 Lines</h2>
+            <p>
+                The entire agent mechanism lives inside one <code>for</code> loop.
+                Here is the structure of the control logic in <code>main.py</code>:
+            </p>
+
+            <div class="cra-code-wrap">
+                <div class="cra-code-label">main.py — agent loop skeleton</div>
+                <div class="cra-code-block">
+                    <code><span class="tok-keyword">for</span> _ <span class="tok-keyword">in</span> range(max_iterations):
+    response = client.chat.completions.create(
+        model=<span class="tok-string">"deepseek-chat"</span>,
+        messages=messages,
+        tools=TOOLS,
+    )
+
+    message = response.choices[<span class="tok-string">0</span>].message
+    finish_reason = response.choices[<span class="tok-string">0</span>].finish_reason
+
+    <span class="tok-comment"># Model is done — no more tool calls</span>
+    <span class="tok-keyword">if</span> finish_reason == <span class="tok-string">"stop"</span>:
+        <span class="tok-keyword">break</span>
+
+    <span class="tok-comment"># Append assistant message (required before tool results)</span>
+    messages.append(message)
+
+    <span class="tok-comment"># Execute each tool call, inject results back</span>
+    <span class="tok-keyword">for</span> tool_call <span class="tok-keyword">in</span> message.tool_calls:
+        result = execute_tool(
+            tool_call.function.name,
+            json.loads(tool_call.function.arguments)
+        )
+        messages.append({
+            <span class="tok-string">"role"</span>: <span class="tok-string">"tool"</span>,
+            <span class="tok-string">"tool_call_id"</span>: tool_call.id,   <span class="tok-comment"># must match</span>
+            <span class="tok-string">"content"</span>: json.dumps(result),
+        })
+
+    <span class="tok-comment"># Loop continues — model reads results, decides next action</span></code>
+                </div>
+            </div>
+
+            <p>
+                That repeating cycle —> call API, read response, execute tools, inject results, repeat, is the entire agent mechanism. Everything else is supporting infrastructure.
+            </p>
+
+            <div style="margin-top: 52px;">
+                <a href="index.html#learning-log" class="back-link">&#8592; Back to Learning Log</a>
+            </div>
+
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="mailto:anudeepreddy332@gmail.com" aria-label="Email">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                </a>
+                <a href="https://linkedin.com/in/anudeep-reddy-mutyala" target="_blank" rel="noopener" aria-label="LinkedIn">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+                        <rect x="2" y="9" width="4" height="12"/>
+                        <circle cx="4" cy="4" r="2"/>
+                    </svg>
+                </a>
+                <a href="https://github.com/anudeepreddy332" target="_blank" rel="noopener" aria-label="GitHub">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+                    </svg>
+                </a>
+            </div>
+            <p class="copyright">&#169; 2025 The Machinist. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="shared.js"></script>
+</body>
+</html>

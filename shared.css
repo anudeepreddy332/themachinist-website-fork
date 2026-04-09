@@ -295,25 +295,26 @@ header h1 {
     font-weight: 400;
     margin-bottom: var(--spacing-lg);
     transition: var(--transition);
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
+    max-width: 650px;
+    margin: 0 auto;
+
     line-height: 1.5;
+    font-style: normal;
 }
 
-/* Exact case study header overrides - tightened verticals */
-header[style*="Spaceship"] h1 {
-    font-size: clamp(2rem, 6vw, 3rem) !important;
-    line-height: 1.2 !important; /* Matches tightened h1 */
-    margin-bottom: var(--spacing-xs) !important; /* Reduces gap to p */
+.project-header h1 {
+    font-size: clamp(2rem, 6vw, 3rem);
+    line-height: 1.2;
+    margin-bottom: var(--spacing-xs);
 }
 
-header[style*="Spaceship"] p {
-    color: var(--text-secondary) !important;
-    font-size: clamp(1rem, 2vw, 1.125rem) !important;
-    font-style: italic !important;
-    margin-top: 0 !important; /* No extra top gap */
+.project-header p:not(.subtitle) {
+    color: var(--text-secondary);
+    font-size: clamp(1rem, 2vw, 1.125rem);
+    font-style: italic;
+    margin-top: 0;
 }
+
 
 .cta-group {
     display: flex;
@@ -386,6 +387,14 @@ h3 {
 p {
     margin-bottom: var(--spacing-md);
     color: var(--text-secondary);
+}
+
+code {
+    white-space: nowrap;
+    background: var(--card-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
 }
 
 ul, ol {
