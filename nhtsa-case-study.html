@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Silent Recalls: Live Vehicle Safety Monitoring | The Machinist</title>
     <script>
         (function() {
             const theme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silent Recalls: Live Vehicle Safety Monitoring | The Machinist</title>
     <meta name="description" content="Production-grade ETL pipeline monitoring NHTSA complaints with live risk tracking (2020-2024). Automated detection of vehicles with dangerous complaint-to-recall ratios. GMC Sierra 1500: 445 complaints, zero recalls.">
     <meta name="keywords" content="Data Engineering, ETL Pipeline, PostgreSQL, Python, Real-time Monitoring, Vehicle Safety, NHTSA, Streamlit">
     <meta name="author" content="Anudeep Reddy">
@@ -25,6 +25,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="shared.css">
     <style>
+        .cra-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        .cra-breadcrumb a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        .cra-breadcrumb a:hover { color: var(--text-color); }
+        .cra-breadcrumb-sep { opacity: 0.4; }
+
         .code-block {
             background: #1e1e1e;
             color: #d4d4d4;
@@ -248,6 +265,13 @@
 
     <header style="text-align: center; padding: calc(var(--spacing-xl) + 60px) var(--spacing-md) var(--spacing-md);">
         <div class="container">
+            <nav class="cra-breadcrumb" aria-label="Breadcrumb">
+                <a href="index.html#learning-log">Learning Log</a>
+                <span class="cra-breadcrumb-sep">/</span>
+                <span>Project Deep Dives</span>
+                <span class="cra-breadcrumb-sep">/</span>
+                <strong>Silent Recalls</strong>
+            </nav>
             <h1>Silent Recalls: Live Vehicle Safety Monitoring</h1>
             <p style="color: var(--text-secondary); font-size: clamp(1rem, 2vw, 1.125rem); font-style: italic;">Production-grade ETL detecting what manufacturers won't acknowledge</p>
         </div>
@@ -258,7 +282,7 @@
         <h2>TL;DR</h2>
         <p><strong>Built an automated ETL pipeline monitoring hundreds of thousands of NHTSA complaints, with live risk tracking focused on 2020–2024 model years. Found GMC Sierra 1500 (2021) with 445 complaints and zero recalls. System sends automated alerts when risk thresholds are breached. This is a production-grade safety intelligence project.</strong></p>
 
-        <img src="images/portfolio-projects/nhtsa-defect-analysis/dashboard/overview_dash_1.png" alt="Live dashboard showing zero-recall high-risk vehicles and complaint-to-recall ratios" style="margin-top: 2rem;">
+        <img loading="lazy" src="images/portfolio-projects/nhtsa-defect-analysis/dashboard/overview_dash_1.png" alt="Live dashboard showing zero-recall high-risk vehicles and complaint-to-recall ratios" style="margin-top: 2rem;">
 
         <hr>
 
@@ -394,7 +418,7 @@
 
         <p>The system automatically targets the top 20 vehicles by complaint volume (2020–2024 model years) and tracks their recall history over time.</p>
 
-        <img src="images/portfolio-projects/nhtsa-defect-analysis/dashboard/Complaints_vs_Recalls_Scatter.png" alt="Scatter plot showing complaint-to-recall relationship, with outliers highlighted" style="margin: 2rem auto;">
+        <img loading="lazy" src="images/portfolio-projects/nhtsa-defect-analysis/dashboard/Complaints_vs_Recalls_Scatter.png" alt="Scatter plot showing complaint-to-recall relationship, with outliers highlighted" style="margin: 2rem auto;">
 
         <h3>Why Stateful ETL Matters</h3>
 
@@ -453,14 +477,14 @@
 
         <p>This view answers: <em>Where is manufacturer response disproportionately low?</em></p>
 
-        <img src="images/portfolio-projects/nhtsa-defect-analysis/dashboard/Complaints_per_recall_bar_chart.png" alt="Bar chart showing top silent recall candidates by complaint-to-recall ratio">
+        <img loading="lazy" src="images/portfolio-projects/nhtsa-defect-analysis/dashboard/Complaints_per_recall_bar_chart.png" alt="Bar chart showing top silent recall candidates by complaint-to-recall ratio">
 
         <p><strong>3. Component Failure Analysis</strong><br>
         Aggregates complaints by vehicle system. Engine failures dominate (2,519 complaints), followed by electrical systems (2,209) and powertrains (1,926).</p>
 
         <p>This view answers: <em>What breaks most often, and how severe are the consequences?</em></p>
 
-        <img src="images/portfolio-projects/nhtsa-defect-analysis/dashboard/comp_failure_analysis.png" alt="Component Pareto Chart">
+        <img loading="lazy" src="images/portfolio-projects/nhtsa-defect-analysis/dashboard/comp_failure_analysis.png" alt="Component Pareto Chart">
 
 
         <h3>Automated Alerting: Only When It Matters</h3>
@@ -488,7 +512,7 @@
 
         <p><strong>Persistent Risk Detection:</strong> Identifies vehicles that appear in the top complaint volumes across multiple years. Ford F-150 appeared in the top 10 for 8 consecutive years (2015–2022). This isn't a fluke, it's systemic.</p>
 
-        <img src="images/portfolio-projects/nhtsa-defect-analysis/dashboard/repeat_offender_vehicles.png" alt="Top Repeat Offenders">
+        <img loading="lazy" src="images/portfolio-projects/nhtsa-defect-analysis/dashboard/repeat_offender_vehicles.png" alt="Top Repeat Offenders">
 
 
         <p><strong>Economic Impact Modeling:</strong> Estimates the financial cost of unresolved component failures using industry-standard coefficients ($5K per complaint, $50K per crash, $100K per injury). The top 10 failing components have generated an estimated $3.04 billion in total costs.</p>
@@ -497,7 +521,7 @@
 
         <p>These modules transform raw complaint data into actionable business intelligence for policy, regulatory, and investigative use.</p>
 
-        <img src="images/portfolio-projects/nhtsa-defect-analysis/dashboard/Component_Cost_Impact.png" alt="Component cost impact analysis showing estimated financial burden by vehicle system">
+        <img loading="lazy" src="images/portfolio-projects/nhtsa-defect-analysis/dashboard/Component_Cost_Impact.png" alt="Component cost impact analysis showing estimated financial burden by vehicle system">
 
         <hr>
 
@@ -849,11 +873,11 @@ workflow_dispatch:  # Manual trigger available</code>
         <hr>
 
         <div style="text-align: center; margin: 3rem 0;">
-            <p><strong><a href="https://nhtsa-silent-recall.streamlit.app" target="_blank" rel="noopener" style="font-size: 1.25rem;">→ View the Live Dashboard</a></strong></p>
-            <p><strong><a href="https://github.com/anudeepreddy332/nhtsa-defect-analysis" target="_blank" rel="noopener" style="font-size: 1.25rem;">→ Explore the Code on GitHub</a></strong></p>
+            <p><strong><a href="https://nhtsa-silent-recall.streamlit.app" target="_blank" rel="noopener noreferrer" style="font-size: 1.25rem;">→ View the Live Dashboard</a></strong></p>
+            <p><strong><a href="https://github.com/anudeepreddy332/nhtsa-defect-analysis" target="_blank" rel="noopener noreferrer" style="font-size: 1.25rem;">→ Explore the Code on GitHub</a></strong></p>
         </div>
 
-        <a href="index.html#projects" class="back-link">← Back to Projects</a>
+        <a href="index.html#learning-log" class="back-link">← Back to Learning Log</a>
     </main>
 
     <footer>
@@ -862,10 +886,10 @@ workflow_dispatch:  # Manual trigger available</code>
                 <a href="mailto:anudeepreddy332@gmail.com" aria-label="Email">
                     <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                 </a>
-                <a href="https://linkedin.com/in/anudeep-reddy-mutyala" target="_blank" rel="noopener" aria-label="LinkedIn">
+                <a href="https://linkedin.com/in/anudeep-reddy-mutyala" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
                     <svg viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
                 </a>
-                <a href="https://github.com/anudeepreddy332" target="_blank" rel="noopener" aria-label="GitHub">
+                <a href="https://github.com/anudeepreddy332" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
                     <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
                 </a>
             </div>

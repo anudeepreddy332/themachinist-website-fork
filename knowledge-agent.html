@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Agent — Project Deep Dive | The Machinist</title>
+    <meta name="description" content="Phase 2 case study: building a persistent knowledge agent with hybrid RAG, reranking, claim verification, and routing between local knowledge and web search.">
+    <meta name="keywords" content="Knowledge Agent, RAG, Hybrid Retrieval, BM25, Cross-Encoder, Claim Verification, Agent Systems">
+    <meta name="author" content="Anudeep Reddy">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Knowledge Agent — Project Deep Dive | The Machinist">
+    <meta property="og:description" content="How a persistent knowledge layer with hybrid retrieval fixed Phase 1 limitations in an autonomous research agent.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="shared.css">
+
+    <style>
+        .ka-header {
+            text-align: left;
+            padding: calc(var(--spacing-xl) + 60px) var(--spacing-md) var(--spacing-lg);
+            background: var(--section-bg);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .ka-header .container,
+        .ka-main {
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
+        .ka-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+        .ka-breadcrumb a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        .ka-breadcrumb a:hover { color: var(--text-color); }
+        .ka-breadcrumb-sep { opacity: 0.4; }
+
+        .ka-series-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+        .ka-header h1 {
+            font-size: clamp(1.6rem, 4vw, 2.4rem);
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            line-height: 1.2;
+            margin-bottom: 14px;
+            color: var(--text-color);
+        }
+        .ka-subtitle {
+            font-size: 0.98rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin: 0;
+            max-width: 700px;
+        }
+
+        .ka-tech-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 20px;
+        }
+        .ka-tech-tag {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 3px 10px;
+            letter-spacing: 0.03em;
+        }
+
+        .ka-main {
+            padding: 52px 24px 80px;
+        }
+        .ka-main p {
+            font-size: 0.96rem;
+            line-height: 1.82;
+            color: var(--text-color);
+            margin-bottom: 16px;
+        }
+        .ka-main h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin: 44px 0 14px;
+            letter-spacing: -0.01em;
+            color: var(--text-color);
+        }
+
+        .ka-callout {
+            border-left: 3px solid var(--text-color);
+            background: var(--section-bg);
+            border-radius: 0 6px 6px 0;
+            padding: 18px 22px;
+            margin: 20px 0 28px;
+        }
+        .ka-callout p {
+            margin: 0;
+            font-size: 0.93rem;
+            line-height: 1.75;
+        }
+
+        .ka-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 12px;
+            margin: 22px 0 30px;
+        }
+        .ka-stat-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 14px;
+            background: var(--bg-color);
+        }
+        .ka-stat-label {
+            font-size: 0.68rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+        .ka-stat-value {
+            font-size: 1.12rem;
+            font-weight: 800;
+            color: var(--text-color);
+            line-height: 1.2;
+        }
+        .ka-stat-note {
+            margin-top: 4px;
+            font-size: 0.78rem;
+            line-height: 1.45;
+            color: var(--text-secondary);
+        }
+
+        .ka-flow {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 22px 0 30px;
+        }
+        .ka-flow-head {
+            background: var(--section-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 16px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        .ka-flow-body {
+            padding: 14px 16px;
+            background: var(--bg-color);
+        }
+        .ka-flow-line {
+            font-size: 0.88rem;
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 7px 0;
+        }
+        .ka-flow-line span {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+        }
+
+        .ka-grid-2,
+        .ka-grid-3 {
+            display: grid;
+            gap: 12px;
+            margin: 18px 0 30px;
+        }
+        .ka-grid-2 { grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); }
+        .ka-grid-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+        .ka-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            background: var(--bg-color);
+        }
+        .ka-card h4 {
+            margin: 0 0 8px;
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+        .ka-card p {
+            margin: 0;
+            font-size: 0.84rem;
+            line-height: 1.65;
+            color: var(--text-secondary);
+        }
+        .ka-card ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+        .ka-card li {
+            font-size: 0.83rem;
+            line-height: 1.55;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+        }
+
+        .ka-code-wrap {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 20px 0 30px;
+        }
+        .ka-code-label {
+            background: var(--section-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 9px 14px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        .ka-code-block {
+            background: #1a1a1a;
+            color: #d4d4d4;
+            padding: 16px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.8rem;
+            line-height: 1.65;
+            white-space: pre;
+        }
+
+        .ka-table-wrap {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: auto;
+            margin: 20px 0 30px;
+            background: var(--bg-color);
+        }
+        .ka-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 560px;
+        }
+        .ka-table th,
+        .ka-table td {
+            border-bottom: 1px solid var(--border-color);
+            padding: 11px 12px;
+            text-align: left;
+            font-size: 0.86rem;
+            color: var(--text-color);
+        }
+        .ka-table th {
+            background: var(--section-bg);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+        }
+
+        .ka-divider {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 38px 0;
+        }
+
+        .ka-main code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.84em;
+            background: var(--section-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            padding: 1px 5px;
+            color: var(--text-color);
+        }
+
+        @media (max-width: 700px) {
+            .ka-main {
+                padding: 36px 16px 60px;
+            }
+            .ka-header {
+                padding: calc(var(--spacing-xl) + 60px) 16px 32px;
+            }
+            .ka-code-block {
+                font-size: 0.74rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <nav id="nav" role="navigation" aria-label="Main navigation">
+        <div class="container">
+            <div class="nav-container">
+                <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <ul>
+                    <li><a href="index.html#projects">Projects</a></li>
+                    <li><a href="index.html#about">About</a></li>
+                    <li><a href="index.html#skills">Skills</a></li>
+                    <li><a href="index.html#learning-log">Learning Log</a></li>
+                    <li><a href="index.html#contact">Contact</a></li>
+                </ul>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                    <div class="toggle-slider">
+                        <svg class="toggle-icon sun-icon" viewBox="0 0 24 24" style="display: block;">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2"/>
+                            <line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" stroke-width="2"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" stroke-width="2"/>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" stroke-width="2"/>
+                            <line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" stroke-width="2"/>
+                            <line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2"/>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" stroke-width="2"/>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <svg class="toggle-icon moon-icon" viewBox="0 0 24 24" style="display: none;">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </div>
+                </button>
+            </div>
+        </div>
+        <div class="mobile-menu">
+            <div class="mobile-menu-header">
+                <button class="close-menu" aria-label="Close menu">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <a href="index.html#projects">Projects</a>
+            <a href="index.html#about">About</a>
+            <a href="index.html#skills">Skills</a>
+            <a href="index.html#learning-log">Learning Log</a>
+            <a href="index.html#contact">Contact</a>
+        </div>
+    </nav>
+
+    <header class="ka-header">
+        <div class="container">
+            <nav class="ka-breadcrumb" aria-label="Breadcrumb">
+                <a href="index.html#learning-log">Learning Log</a>
+                <span class="ka-breadcrumb-sep">/</span>
+                <span>Project Deep Dives</span>
+                <span class="ka-breadcrumb-sep">/</span>
+                <span style="color: var(--text-color); font-weight: 500;">Knowledge Agent</span>
+            </nav>
+            <div class="ka-series-label">Project Deep Dive</div>
+            <h1>Knowledge Agent with Hybrid RAG</h1>
+            <p class="ka-subtitle">Phase 2 upgrades the research agent into a persistent knowledge system that stores evidence, retrieves relevant chunks, reranks context, verifies claims, and routes intelligently between local memory and live web search.</p>
+            <div class="ka-tech-row">
+                <span class="ka-tech-tag">RAG</span>
+                <span class="ka-tech-tag">Dense Retrieval</span>
+                <span class="ka-tech-tag">BM25</span>
+                <span class="ka-tech-tag">RRF</span>
+                <span class="ka-tech-tag">Cross-Encoder</span>
+                <span class="ka-tech-tag">Verification</span>
+            </div>
+        </div>
+    </header>
+
+    <main id="main">
+        <article class="ka-main">
+            <h2>TL;DR</h2>
+            <div class="ka-callout">
+                <p>Phase 1 could research, but it could not remember. Phase 2 introduces persistent knowledge and hybrid retrieval, turning one-shot web reasoning into a reusable memory system with improved routing accuracy and higher content reliability.</p>
+            </div>
+
+            <div class="ka-stat-grid">
+                <div class="ka-stat-card">
+                    <div class="ka-stat-label">Tool Routing Accuracy</div>
+                    <div class="ka-stat-value">100%</div>
+                    <div class="ka-stat-note">KB vs web routing decisions</div>
+                </div>
+                <div class="ka-stat-card">
+                    <div class="ka-stat-label">Content Hit Rate</div>
+                    <div class="ka-stat-value">92%</div>
+                    <div class="ka-stat-note">Relevant context retrieval coverage</div>
+                </div>
+                <div class="ka-stat-card">
+                    <div class="ka-stat-label">Overall Pass Rate</div>
+                    <div class="ka-stat-value">92%</div>
+                    <div class="ka-stat-note">Evaluation harness result</div>
+                </div>
+                <div class="ka-stat-card">
+                    <div class="ka-stat-label">Mean Relevance</div>
+                    <div class="ka-stat-value">-4.0948</div>
+                    <div class="ka-stat-note">Current scoring baseline</div>
+                </div>
+            </div>
+
+            <p>The design goal was not just better answers, but better system behavior: reusable knowledge, explicit retrieval logic, and verifiable claims under noisy inputs.</p>
+
+            <hr class="ka-divider">
+
+            <h2>Architecture Flow</h2>
+            <div class="ka-flow">
+                <div class="ka-flow-head">Hybrid RAG Pipeline</div>
+                <div class="ka-flow-body">
+                    <div class="ka-flow-line">User Query <span>enters orchestration layer</span></div>
+                    <div class="ka-flow-line">→ Routing Decision <span>knowledge-base path or web path</span></div>
+                    <div class="ka-flow-line">→ <code>query_knowledge_base</code> / <code>web_search</code></div>
+                    <div class="ka-flow-line">→ Dense Retrieval + BM25</div>
+                    <div class="ka-flow-line">→ Reciprocal Rank Fusion (RRF)</div>
+                    <div class="ka-flow-line">→ Cross-Encoder Reranking</div>
+                    <div class="ka-flow-line">→ <code>verify_claim</code></div>
+                    <div class="ka-flow-line">→ Answer Synthesis</div>
+                    <div class="ka-flow-line">→ Optional <code>save_to_knowledge_base</code></div>
+                </div>
+            </div>
+
+            <h2>Core Mechanics</h2>
+            <div class="ka-grid-3">
+                <div class="ka-card">
+                    <h4>Store</h4>
+                    <p>Chunked ingestion persists useful evidence so future runs can reuse context instead of re-fetching everything from the web.</p>
+                </div>
+                <div class="ka-card">
+                    <h4>Retrieve + Rerank</h4>
+                    <p>Dense retrieval and BM25 broaden recall; RRF and cross-encoder reranking sharpen final relevance.</p>
+                </div>
+                <div class="ka-card">
+                    <h4>Verify + Generate</h4>
+                    <p>Claim checks reduce unsupported synthesis and force tighter alignment between generated responses and retrieved evidence.</p>
+                </div>
+            </div>
+
+            <h2>Technical Deep Dive</h2>
+            <div class="ka-grid-2">
+                <div class="ka-card">
+                    <h4>Embeddings (Dense Retrieval)</h4>
+                    <p>Similarity is computed through cosine distance, enabling semantic retrieval beyond exact keyword overlap.</p>
+                    <div class="ka-code-wrap" style="margin: 10px 0 0;">
+                        <div class="ka-code-label">Cosine Similarity</div>
+                        <pre class="ka-code-block">cosine_similarity = (A · B) / (||A|| ||B||)</pre>
+                    </div>
+                </div>
+                <div class="ka-card">
+                    <h4>Hybrid Search (Dense + BM25)</h4>
+                    <p>RRF blends lexical and semantic retrieval so exact-match and meaning-match evidence can both survive the first cut.</p>
+                    <div class="ka-code-wrap" style="margin: 10px 0 0;">
+                        <div class="ka-code-label">RRF Score</div>
+                        <pre class="ka-code-block">score = 1/(rank_dense + 60) + 1/(rank_bm25 + 60)</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ka-grid-3">
+                <div class="ka-card">
+                    <h4>Ingestion Pipeline</h4>
+                    <p>Paragraph-first splitting preserves semantic coherence, with fallback chunking when source structure is weak.</p>
+                </div>
+                <div class="ka-card">
+                    <h4>Cross-Encoder Reranking</h4>
+                    <p>Query and candidate text are scored jointly, improving precision over independent bi-encoder scoring.</p>
+                </div>
+                <div class="ka-card">
+                    <h4>Dual-Tool Routing</h4>
+                    <p>Strong KB match uses local memory. Weak match falls back to live web search to prevent brittle local-only behavior.</p>
+                </div>
+            </div>
+
+            <h2>Concrete Retrieval Example</h2>
+            <div class="ka-flow">
+                <div class="ka-flow-head">Query: "What is context poisoning in RAG?"</div>
+                <div class="ka-flow-body">
+                    <div class="ka-flow-line">1. BM25 finds exact keyword-aligned chunk.</div>
+                    <div class="ka-flow-line">2. Dense retrieval surfaces semantically related chunk.</div>
+                    <div class="ka-flow-line">3. RRF merges both rankings into a unified candidate list.</div>
+                    <div class="ka-flow-line">4. Cross-encoder scores relevance jointly with query.</div>
+                    <div class="ka-flow-line">5. Highest-confidence chunk is selected for synthesis.</div>
+                </div>
+            </div>
+
+            <h2>Claim Verification Layer</h2>
+            <div class="ka-grid-2">
+                <div class="ka-card">
+                    <h4><code>verify_claim</code> Logic</h4>
+                    <p>Claim-to-evidence similarity threshold gates support status.</p>
+                    <div class="ka-code-wrap" style="margin: 10px 0 0;">
+                        <div class="ka-code-label">Support Rule</div>
+                        <pre class="ka-code-block">if cosine_similarity >= 0.65:
+    status = "SUPPORTED"</pre>
+                    </div>
+                </div>
+                <div class="ka-card">
+                    <h4>Observed Behavior</h4>
+                    <p>Example: claim/chunk similarity of 0.71 is accepted as supported, reducing weakly grounded response risk.</p>
+                </div>
+            </div>
+
+            <hr class="ka-divider">
+
+            <h2>Challenges, Failures, and Pivots</h2>
+            <div class="ka-grid-2">
+                <div class="ka-card">
+                    <h4>Routing Failures</h4>
+                    <p>Resolved by explicit prompt routing rules and clearer dispatch boundaries for KB vs web tools.</p>
+                </div>
+                <div class="ka-card">
+                    <h4>Context Poisoning</h4>
+                    <p>Mitigated through cross-encoder reranking to demote noisy high-recall chunks.</p>
+                </div>
+                <div class="ka-card">
+                    <h4>BM25 Invalidation Bug</h4>
+                    <p>Fixed by rebuilding BM25 index independently, eliminating stale lexical scoring artifacts.</p>
+                </div>
+                <div class="ka-card">
+                    <h4>Evaluation Mismatch</h4>
+                    <p>Resolved by sharing a consistent <code>SYSTEM_PROMPT</code> between runtime and evaluation harness.</p>
+                </div>
+            </div>
+
+            <h2>Evaluation Results</h2>
+            <div class="ka-table-wrap">
+                <table class="ka-table">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Result</th>
+                            <th>Interpretation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Tool Routing Accuracy</td>
+                            <td>100%</td>
+                            <td>Routing policy is currently robust under tested prompts.</td>
+                        </tr>
+                        <tr>
+                            <td>Content Hit Rate</td>
+                            <td>92%</td>
+                            <td>Most required evidence was recovered in retrieval passes.</td>
+                        </tr>
+                        <tr>
+                            <td>Overall Pass Rate</td>
+                            <td>92%</td>
+                            <td>One failure remains tied to keyword mismatch behavior.</td>
+                        </tr>
+                        <tr>
+                            <td>Mean Relevance</td>
+                            <td>-4.0948</td>
+                            <td>Current relevance baseline to improve in future iterations.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2>Key Learnings</h2>
+            <div class="ka-grid-3">
+                <div class="ka-card">
+                    <h4>Retrieval quality dominates</h4>
+                    <p>Better model output depends first on better evidence selection, not only larger models.</p>
+                </div>
+                <div class="ka-card">
+                    <h4>Hybrid beats single retrieval</h4>
+                    <p>BM25 + dense search improves recall breadth before reranking precision kicks in.</p>
+                </div>
+                <div class="ka-card">
+                    <h4>Verification reduces hallucination risk</h4>
+                    <p>Claim gating forces synthesis to remain closer to available evidence.</p>
+                </div>
+                <div class="ka-card">
+                    <h4>Eval must mirror production</h4>
+                    <p>Prompt inconsistency between eval and runtime can hide real regressions.</p>
+                </div>
+                <div class="ka-card">
+                    <h4>Silent bugs are dangerous</h4>
+                    <p>The BM25 invalidation issue proved that retrieval pipelines can fail quietly.</p>
+                </div>
+                <div class="ka-card">
+                    <h4>Persistent memory changes behavior</h4>
+                    <p>Saved knowledge compounds agent performance over repeated domain queries.</p>
+                </div>
+            </div>
+
+            <h2>Phase 3 Direction</h2>
+            <div class="ka-grid-2">
+                <div class="ka-card">
+                    <h4>Current Gaps</h4>
+                    <ul>
+                        <li>No self-correction execution loop yet.</li>
+                        <li>No direct execution feedback cycle.</li>
+                        <li>Cost tracking is incomplete.</li>
+                    </ul>
+                </div>
+                <div class="ka-card">
+                    <h4>Next Upgrade</h4>
+                    <ul>
+                        <li>LangGraph state-machine orchestration.</li>
+                        <li>Execution → diagnose → patch loop.</li>
+                        <li>Tighter runtime observability and control.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h2>Appendix: Run Locally</h2>
+            <div class="ka-code-wrap">
+                <div class="ka-code-label">Quickstart</div>
+                <pre class="ka-code-block">python -m scripts.ingest
+python -m scripts.evaluate
+python main.py</pre>
+            </div>
+
+            <p><strong>Code references:</strong> <code>src/knowledge_agent/tools.py</code>, <code>main.py</code></p>
+            <a href="index.html#learning-log" class="back-link">← Back to Learning Log</a>
+        </article>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="mailto:anudeepreddy332@gmail.com" aria-label="Email">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                </a>
+                <a href="https://linkedin.com/in/anudeep-reddy-mutyala" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+                        <rect x="2" y="9" width="4" height="12"/>
+                        <circle cx="4" cy="4" r="2"/>
+                    </svg>
+                </a>
+                <a href="https://github.com/anudeepreddy332" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+                    </svg>
+                </a>
+            </div>
+            <p class="copyright">© 2025 The Machinist. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="shared.js"></script>
+</body>
+</html>
