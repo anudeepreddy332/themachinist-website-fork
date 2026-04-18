@@ -31,6 +31,13 @@
     --section-bg: #000000; /* Pitch black for dark headers */
     --card-bg: #1a1a1a;
     --card-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    --max-width: 1100px;
+    --transition: all 0.15s ease;
+    --spacing-xs: 8px;
+    --spacing-sm: 16px;
+    --spacing-md: 24px;
+    --spacing-lg: 40px;
+    --spacing-xl: 60px;
 }
 
 html {
@@ -302,20 +309,6 @@ header h1 {
     font-style: normal;
 }
 
-.project-header h1 {
-    font-size: clamp(2rem, 6vw, 3rem);
-    line-height: 1.2;
-    margin-bottom: var(--spacing-xs);
-}
-
-.project-header p:not(.subtitle) {
-    color: var(--text-secondary);
-    font-size: clamp(1rem, 2vw, 1.125rem);
-    font-style: italic;
-    margin-top: 0;
-}
-
-
 .cta-group {
     display: flex;
     gap: var(--spacing-sm);
@@ -503,25 +496,6 @@ a:focus {
     font-size: 0.75rem;
     padding: 4px 8px;
     border-radius: 2px;
-}
-
-.project-link {
-    color: var(--text-color);
-    text-decoration: none;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: gap 0.15s ease, color 0.15s ease;
-}
-
-.project-link:hover {
-    gap: 16px;
-    color: var(--accent);
-}
-
-.project-link::after {
-    content: '→';
 }
 
 .about-text {
