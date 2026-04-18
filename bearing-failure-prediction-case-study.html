@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bearing Failure Prediction: 2.88h Accuracy | The Machinist</title>
     <script>
         (function() {
             const theme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bearing Failure Prediction: 2.88h Accuracy | The Machinist</title>
     <meta name="description" content="Production-grade ML system predicting bearing failures with 2.88-hour accuracy in critical zones. Stratified sampling + weighted loss optimization achieved 10x improvement, $300K annual savings.">
     <meta name="keywords" content="Predictive Maintenance, Bearing Failure, Machine Learning, RUL Prediction, LightGBM, Manufacturing, Condition Monitoring">
     <meta name="author" content="Anudeep Reddy">
@@ -22,6 +22,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="shared.css">
+    <style>
+        .cra-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        .cra-breadcrumb a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        .cra-breadcrumb a:hover { color: var(--text-color); }
+        .cra-breadcrumb-sep { opacity: 0.4; }
+    </style>
 </head>
 <body>
     <a href="#main" class="skip-link">Skip to main content</a>
@@ -78,6 +96,13 @@
 
     <header style="text-align: center; padding: calc(var(--spacing-xl) + 60px) var(--spacing-md) var(--spacing-lg); background: var(--section-bg);">
         <div class="container">
+            <nav class="cra-breadcrumb" aria-label="Breadcrumb">
+                <a href="index.html#learning-log">Learning Log</a>
+                <span class="cra-breadcrumb-sep">/</span>
+                <span>Project Deep Dives</span>
+                <span class="cra-breadcrumb-sep">/</span>
+                <strong>Bearing Failure Prediction</strong>
+            </nav>
             <h1>Predicting Bearing Failures with 2.88-Hour Accuracy</h1>
             <p style="color: var(--text-secondary); font-size: clamp(1rem, 2vw, 1.125rem); font-style: italic;">How stratified sampling and weighted loss optimization turned a failing model into a production-ready system</p>
         </div>
@@ -101,7 +126,7 @@
 
         <!-- THE DATA -->
         <h2>The Data: 34 Days Until Failure</h2>
-        <img src="images/portfolio-projects/ims-bearing-failure-prediction/degradation_overview.png" alt="Bearing degradation over time showing RMS trends">
+        <img loading="lazy" src="images/portfolio-projects/ims-bearing-failure-prediction/degradation_overview.png" alt="Bearing degradation over time showing RMS trends">
         <p>Four test bearings ran 24/7 under constant 6,000 lb load until failure. Bearings 3 and 4 developed inner race defects and eventually failed catastrophically. Vibration sensors captured data every 10 minutes at 20,480 Hz — both low-frequency degradation trends and high-frequency impact events.</p>
         <p><strong>Key observation:</strong> RMS (vibration amplitude) steadily increases as bearings degrade, but the rate accelerates dramatically in the final 100 hours before failure. This non-linear behavior is what makes prediction challenging — and what I exploited.</p>
 
@@ -122,7 +147,7 @@
 
         <!-- FEATURE ENGINEERING -->
         <h2>Feature Engineering: From Raw Signals to 380 Features</h2>
-        <img src="images/portfolio-projects/ims-bearing-failure-prediction/feature_importance.png" alt="Top 10 most important features">
+        <img loading="lazy" src="images/portfolio-projects/ims-bearing-failure-prediction/feature_importance.png" alt="Top 10 most important features">
 
         <p>I extracted four categories of features from the raw 20,480 Hz vibration signals:</p>
 
@@ -149,7 +174,7 @@ bp_5k_10k = bandpower(signal, fs=20480, fmin=5000, fmax=10000)</code></pre>
 
         <!-- FIRST FAILURE -->
         <h2>The First Failure: Distribution Mismatch (R² = -11.9)</h2>
-        <img src="images/portfolio-projects/ims-bearing-failure-prediction/train_test_split_comparison.png" alt="Time-based vs Stratified Split comparison">
+        <img loading="lazy" src="images/portfolio-projects/ims-bearing-failure-prediction/train_test_split_comparison.png" alt="Time-based vs Stratified Split comparison">
 
         <h3>What Went Wrong</h3>
         <p>My initial approach used a standard <strong>time-based train/test split</strong>:</p>
@@ -172,7 +197,7 @@ bp_5k_10k = bandpower(signal, fs=20480, fmin=5000, fmax=10000)</code></pre>
 
         <!-- SECOND BREAKTHROUGH -->
         <h2>The Second Breakthrough: Weighted Loss Function</h2>
-        <img src="images/portfolio-projects/ims-bearing-failure-prediction/weighted_loss_impact.png" alt="Impact of weighted loss on MAE by RUL range">
+        <img loading="lazy" src="images/portfolio-projects/ims-bearing-failure-prediction/weighted_loss_impact.png" alt="Impact of weighted loss on MAE by RUL range">
 
         <h3>The Problem: Not All Errors Are Equal</h3>
         <p>Standard MAE treats all errors equally. But a 30-hour error has <strong>drastically different consequences</strong> depending on actual RUL:</p>
@@ -212,7 +237,7 @@ bp_5k_10k = bandpower(signal, fs=20480, fmin=5000, fmax=10000)</code></pre>
 
         <!-- RESULTS -->
         <h2>Results: Before vs After</h2>
-        <img src="images/portfolio-projects/ims-bearing-failure-prediction/before_after_comparison.png" alt="Before and After optimization results">
+        <img loading="lazy" src="images/portfolio-projects/ims-bearing-failure-prediction/before_after_comparison.png" alt="Before and After optimization results">
 
         <table>
             <tr><th>Metric</th><th>Before (Baseline)</th><th>After (Optimized)</th></tr>
@@ -223,7 +248,7 @@ bp_5k_10k = bandpower(signal, fs=20480, fmin=5000, fmax=10000)</code></pre>
         </table>
 
         <h3>Performance by RUL Range</h3>
-        <img src="images/portfolio-projects/ims-bearing-failure-prediction/rul_range_performance.png" alt="Model performance across different RUL ranges">
+        <img loading="lazy" src="images/portfolio-projects/ims-bearing-failure-prediction/rul_range_performance.png" alt="Model performance across different RUL ranges">
 
         <table>
             <tr><th>RUL Range</th><th>MAE (hours)</th><th>Use Case</th></tr>
@@ -239,7 +264,7 @@ bp_5k_10k = bandpower(signal, fs=20480, fmin=5000, fmax=10000)</code></pre>
 
         <!-- PHYSICS -->
         <h2>Understanding Bearing Failure Physics</h2>
-        <img src="images/portfolio-projects/ims-bearing-failure-prediction/rms_kurtosis_behavior.png" alt="RMS vs Kurtosis behavior over time">
+        <img loading="lazy" src="images/portfolio-projects/ims-bearing-failure-prediction/rms_kurtosis_behavior.png" alt="RMS vs Kurtosis behavior over time">
 
         <p><strong>Surprising observation:</strong> RMS rises throughout degradation, but kurtosis peaks mid-failure then <em>drops</em> near catastrophic failure. Why?</p>
         <ul>
@@ -266,7 +291,7 @@ bp_5k_10k = bandpower(signal, fs=20480, fmin=5000, fmax=10000)</code></pre>
 
         <!-- DASHBOARD -->
         <h2>Production Deployment: Streamlit Dashboard</h2>
-        <img src="images/portfolio-projects/ims-bearing-failure-prediction/dashboard_screenshot-0.png" alt="Interactive Streamlit dashboard for bearing health monitoring">
+        <img loading="lazy" src="images/portfolio-projects/ims-bearing-failure-prediction/dashboard_screenshot-0.png" alt="Interactive Streamlit dashboard for bearing health monitoring">
 
         <p>Built an interactive dashboard for real-time monitoring:</p>
         <ul>
@@ -309,9 +334,9 @@ bp_5k_10k = bandpower(signal, fs=20480, fmin=5000, fmax=10000)</code></pre>
             <li><strong>Temporal features</strong> — noise smoothing with trend preservation</li>
         </ol>
         <p><strong>Result:</strong> 2.88h accuracy in critical zones, $300K annual savings, 98.5% of failures prevented.</p>
-        <p><strong>GitHub:</strong> <a href="https://github.com/anudeepreddy332/ims-bearing-failure-prediction" target="_blank" rel="noopener">Full code, pipeline, and documentation →</a></p>
+        <p><strong>GitHub:</strong> <a href="https://github.com/anudeepreddy332/ims-bearing-failure-prediction" target="_blank" rel="noopener noreferrer">Full code, pipeline, and documentation →</a></p>
 
-        <a href="index.html#projects" class="back-link">← Back to Projects</a>
+        <a href="index.html#learning-log" class="back-link">← Back to Learning Log</a>
     </main>
 
     <footer>
@@ -320,10 +345,10 @@ bp_5k_10k = bandpower(signal, fs=20480, fmin=5000, fmax=10000)</code></pre>
                 <a href="mailto:anudeepreddy332@gmail.com" aria-label="Email">
                     <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                 </a>
-                <a href="https://linkedin.com/in/anudeep-reddy-mutyala" target="_blank" rel="noopener" aria-label="LinkedIn">
+                <a href="https://linkedin.com/in/anudeep-reddy-mutyala" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
                     <svg viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
                 </a>
-                <a href="https://github.com/anudeepreddy332" target="_blank" rel="noopener" aria-label="GitHub">
+                <a href="https://github.com/anudeepreddy332" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
                     <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
                 </a>
             </div>
@@ -393,5 +418,6 @@ bp_5k_10k = bandpower(signal, fs=20480, fmin=5000, fmax=10000)</code></pre>
             });
         });
     </script>
+    <script src="shared.js"></script>
 </body>
 </html>
