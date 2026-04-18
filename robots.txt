@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /VC/
+Sitemap: https://themachinist.org/sitemap.xml
