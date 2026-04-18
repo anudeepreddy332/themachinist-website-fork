@@ -314,6 +314,7 @@ header h1 {
     gap: var(--spacing-sm);
     justify-content: center;
     flex-wrap: wrap;
+    margin-top: var(--spacing-lg);
 }
 
 .cta {
@@ -357,11 +358,11 @@ main {
 }
 
 h2 {
-    font-size: clamp(1.5rem, 3vw, 1.75rem);
-    font-weight: 900;
+    font-size: 1.2rem;
+    font-weight: 700;
     margin-top: var(--spacing-xl);
     margin-bottom: var(--spacing-md);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
     color: var(--text-color);
 }
 
@@ -370,7 +371,7 @@ h2:first-child {
 }
 
 h3 {
-    font-size: 1.3rem;
+    font-size: 1rem;
     font-weight: 700;
     margin-top: var(--spacing-lg);
     margin-bottom: var(--spacing-sm);
@@ -791,9 +792,9 @@ footer {
         padding: var(--spacing-md) 0;
     }
 
-    /* Case study mobile h2 clamp preserved */
+    /* Mobile heading scale */
     h2 {
-        font-size: clamp(1.5rem, 3vw, 1.75rem);
+        font-size: 1.2rem;
     }
     .article-card {
         padding: var(--spacing-sm);

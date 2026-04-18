@@ -43,8 +43,8 @@
         .cra-breadcrumb-sep { opacity: 0.4; }
 
         .code-block {
-            background: #1e1e1e;
-            color: #d4d4d4;
+            background: #1a1a1a !important;
+            color: #d4d4d4 !important;
             padding: 1.5rem;
             border-radius: 8px;
             overflow-x: auto;
@@ -58,6 +58,10 @@
         .code-block code {
             display: block;
             white-space: pre;
+            background: transparent !important;
+            color: #d4d4d4 !important;
+            border: none !important;
+            padding: 0 !important;
         }
 
         .code-label {
@@ -74,9 +78,15 @@
         }
 
         header h1 {
-            font-size: clamp(1.75rem, 4vw, 2.5rem) !important;
+            font-size: clamp(1.6rem, 4vw, 2.2rem);
+            font-weight: 800;
             line-height: 1.3;
             margin-bottom: 1rem;
+        }
+        .nhtsa-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.975rem;
+            font-style: italic;
         }
 
         main img {
@@ -263,7 +273,7 @@
         </div>
     </nav>
 
-    <header style="text-align: center; padding: calc(var(--spacing-xl) + 60px) var(--spacing-md) var(--spacing-md);">
+	    <header style="text-align: center; padding: calc(var(--spacing-xl) + 60px) var(--spacing-md) var(--spacing-lg);">
         <div class="container">
             <nav class="cra-breadcrumb" aria-label="Breadcrumb">
                 <a href="index.html#learning-log">Learning Log</a>
@@ -273,7 +283,7 @@
                 <strong>Silent Recalls</strong>
             </nav>
             <h1>Silent Recalls: Live Vehicle Safety Monitoring</h1>
-            <p style="color: var(--text-secondary); font-size: clamp(1rem, 2vw, 1.125rem); font-style: italic;">Production-grade ETL detecting what manufacturers won't acknowledge</p>
+            <p class="nhtsa-subtitle">Production-grade ETL detecting what manufacturers won't acknowledge</p>
         </div>
     </header>
 
@@ -877,7 +887,7 @@ workflow_dispatch:  # Manual trigger available</code>
             <p><strong><a href="https://github.com/anudeepreddy332/nhtsa-defect-analysis" target="_blank" rel="noopener noreferrer" style="font-size: 1.25rem;">→ Explore the Code on GitHub</a></strong></p>
         </div>
 
-        <a href="index.html#learning-log" class="back-link">← Back to Learning Log</a>
+        <a href="index.html#projects" class="back-link">← Back to Projects</a>
     </main>
 
     <footer>

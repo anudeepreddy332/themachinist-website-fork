@@ -39,6 +39,15 @@
         }
         .cra-breadcrumb a:hover { color: var(--text-color); }
         .cra-breadcrumb-sep { opacity: 0.4; }
+        header h1 {
+            font-size: clamp(1.6rem, 4vw, 2.2rem);
+            font-weight: 800;
+        }
+        .bfp-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.975rem;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -104,7 +113,7 @@
                 <strong>Bearing Failure Prediction</strong>
             </nav>
             <h1>Predicting Bearing Failures with 2.88-Hour Accuracy</h1>
-            <p style="color: var(--text-secondary); font-size: clamp(1rem, 2vw, 1.125rem); font-style: italic;">How stratified sampling and weighted loss optimization turned a failing model into a production-ready system</p>
+            <p class="bfp-subtitle">How stratified sampling and weighted loss optimization turned a failing model into a production-ready system</p>
         </div>
     </header>
 
@@ -336,7 +345,7 @@ bp_5k_10k = bandpower(signal, fs=20480, fmin=5000, fmax=10000)</code></pre>
         <p><strong>Result:</strong> 2.88h accuracy in critical zones, $300K annual savings, 98.5% of failures prevented.</p>
         <p><strong>GitHub:</strong> <a href="https://github.com/anudeepreddy332/ims-bearing-failure-prediction" target="_blank" rel="noopener noreferrer">Full code, pipeline, and documentation →</a></p>
 
-        <a href="index.html#learning-log" class="back-link">← Back to Learning Log</a>
+        <a href="index.html#projects" class="back-link">← Back to Projects</a>
     </main>
 
     <footer>
