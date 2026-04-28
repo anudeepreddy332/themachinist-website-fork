@@ -113,6 +113,7 @@ if (filterButtons && articleCards) {
             articleCards.forEach(card => {
                 card.classList.toggle('hidden', !(filter === 'all' || card.dataset.category === filter));
             });
+            document.getElementById('learning-log')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
 }

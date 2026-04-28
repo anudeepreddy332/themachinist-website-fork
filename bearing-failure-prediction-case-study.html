@@ -53,6 +53,11 @@
             font-size: 0.975rem;
             font-style: italic;
         }
+        pre {
+            overflow-x: auto;
+            max-width: 100%;
+            white-space: pre;
+        }
     </style>
 </head>
 <body>
@@ -148,6 +153,7 @@
 
         <!-- APPROACH -->
         <h2>Approach: A 5-Stage Pipeline</h2>
+        <div style="overflow-x: auto; max-width: 100%; width: 100%; display: block;">
         <table>
             <tr><th>Stage</th><th>What I Did</th><th>Impact</th></tr>
             <tr><td>1. Feature Engineering</td><td>Extracted 380 temporal + frequency features from raw vibration signals</td><td>Captured degradation patterns across time and frequency domains</td></tr>
@@ -156,6 +162,7 @@
             <tr><td>4. Loss Function</td><td>Weighted MAE (10x penalty for low-RUL errors)</td><td>Critical zone MAE: 30h → 2.88h</td></tr>
             <tr><td>5. Hyperparameter Tuning</td><td>Optuna Bayesian optimization (80 trials)</td><td>Fine-tuned LightGBM for production</td></tr>
         </table>
+        </div>
 
         <hr>
 
@@ -253,6 +260,7 @@ bp_5k_10k = bandpower(signal, fs=20480, fmin=5000, fmax=10000)</code></pre>
         <h2>Results: Before vs After</h2>
         <img loading="lazy" src="images/portfolio-projects/ims-bearing-failure-prediction/before_after_comparison.png" alt="Before and After optimization results">
 
+        <div style="overflow-x: auto; max-width: 100%; width: 100%; display: block;">
         <table>
             <tr><th>Metric</th><th>Before (Baseline)</th><th>After (Optimized)</th></tr>
             <tr><td>Critical Zone MAE (0-50h)</td><td>~30 hours</td><td><strong>2.88 hours</strong></td></tr>
@@ -260,10 +268,12 @@ bp_5k_10k = bandpower(signal, fs=20480, fmin=5000, fmax=10000)</code></pre>
             <tr><td>Test R²</td><td>-14.58</td><td><strong>0.9852</strong></td></tr>
             <tr><td>Variance Explained</td><td>N/A (negative)</td><td><strong>98.5%</strong></td></tr>
         </table>
+        </div>
 
         <h3>Performance by RUL Range</h3>
         <img loading="lazy" src="images/portfolio-projects/ims-bearing-failure-prediction/rul_range_performance.png" alt="Model performance across different RUL ranges">
 
+        <div style="overflow-x: auto; max-width: 100%; width: 100%; display: block;">
         <table>
             <tr><th>RUL Range</th><th>MAE (hours)</th><th>Use Case</th></tr>
             <tr><td><strong>0-50h (Critical)</strong></td><td><strong>2.88</strong></td><td>Emergency maintenance — trigger within 24 hours</td></tr>
@@ -272,6 +282,7 @@ bp_5k_10k = bandpower(signal, fs=20480, fmin=5000, fmax=10000)</code></pre>
             <tr><td>150-300h (Monitor)</td><td>~17</td><td>Track closely, no immediate action</td></tr>
             <tr><td>300+h (Healthy)</td><td>~15</td><td>Baseline monitoring — no concerns</td></tr>
         </table>
+        </div>
         <p><strong>Model behavior:</strong> Accuracy is highest where it matters most (imminent failures) and gracefully degrades for less critical predictions. Exactly what production systems need.</p>
 
         <hr>
@@ -292,6 +303,7 @@ bp_5k_10k = bandpower(signal, fs=20480, fmin=5000, fmax=10000)</code></pre>
 
         <!-- BUSINESS IMPACT -->
         <h2>Business Impact: $300K Annual Savings</h2>
+        <div style="overflow-x: auto; max-width: 100%; width: 100%; display: block;">
         <table>
             <tr><th>Metric</th><th>Before (Time-based)</th><th>After (Predictive)</th></tr>
             <tr><td>Strategy</td><td>Replace every 30 days</td><td>Replace when RUL &lt; 100h</td></tr>
@@ -300,6 +312,7 @@ bp_5k_10k = bandpower(signal, fs=20480, fmin=5000, fmax=10000)</code></pre>
             <tr><td>Annual Cost</td><td>$500K</td><td><strong>$200K</strong></td></tr>
             <tr><td><strong>Savings</strong></td><td>—</td><td><strong>$300K/year (60%)</strong></td></tr>
         </table>
+        </div>
 
         <hr>
 

@@ -133,6 +133,18 @@
             <div class="container">
                 <h2 id="projects-heading">Projects</h2>
                 <div class="projects-grid">
+                    <a href="code-agent.html" class="article-card" data-category="projects">
+                        <h3 class="article-title">Code-Fix Agent: Self-Correcting AI System</h3>
+                        <div class="project-tech">
+                            <span class="tech-tag">Python</span>
+                            <span class="tech-tag">LangGraph</span>
+                            <span class="tech-tag">DeepSeek API</span>
+                            <span class="tech-tag">LangSmith</span>
+                            <span class="tech-tag">subprocess sandbox</span>
+                        </div>
+                        <p class="article-excerpt">A goal-directed AI agent that takes broken Python scripts, executes them, diagnoses the failure, patches the code, and retries — autonomously. Built with a LangGraph state machine, human-in-the-loop approval, LangSmith tracing, and a 95% fix rate across 20 diverse error types. Phase 3 of a 6-phase agentic AI curriculum.</p>
+                    </a>
+
                     <a href="https://github.com/anudeepreddy332/bosch-production-line-performance-prediction" target="_blank" rel="noopener noreferrer" class="article-card" data-category="projects">
                         <h3 class="article-title">Bosch Production Line: Predictive Quality Control</h3>
                         <div class="project-tech">
@@ -175,11 +187,35 @@
             <div class="container">
                 <h2 id="about-heading">About</h2>
                 <div class="about-text">
-                    <p>I build <strong>machine learning systems</strong> and <strong>agentic AI pipelines</strong> that turn raw data into decisions, tools, and automated workflows. My focus is end-to-end: data engineering, feature design, model development, and production automation, with a particular interest in <strong>predictive systems</strong>, <strong>risk modeling</strong>, and <strong>operational intelligence</strong>.</p>
+                    <p>I design and build <strong>machine learning systems</strong> and
+                    <strong>agentic AI pipelines</strong> that convert raw data into
+                    decisions, tools, and automated workflows. My foundation is
+                    <strong>end-to-end ML</strong> — data engineering, feature design,
+                    model development, and production automation — with a focus on
+                    <strong>predictive systems</strong>, <strong>risk modeling</strong>,
+                    and <strong>operational intelligence</strong>.</p>
 
-                    <p>Right now I'm working through a structured 5-phase agentic AI curriculum. Phase 1 was raw tool-calling loops. Phase 2 was persistent knowledge retrieval with <strong>hybrid RAG</strong>. Phase 3 (in progress) is self-correcting execution agents with <strong>LangGraph</strong>. Phases 4 and 5 cover multi-agent orchestration and production deployment with FastAPI and LangFuse. Each phase ships a real working system.</p>
+                    <p>I'm building through a structured <strong>6-phase agentic AI
+                    curriculum</strong>, each phase shipping a real working system.
+                    Phase 1 built a CLI research agent from scratch — raw tool-calling
+                    loops, web search, and structured report generation. Phase 2 added
+                    persistent knowledge retrieval: hybrid RAG with BM25 and dense search,
+                    cross-encoder reranking, claim verification, and a persistent memory
+                    layer.<p>
 
-                    <p>I'm drawn to systems that catch failures before they happen, get smarter from context, and hold up in production — predictive maintenance, autonomous research pipelines, agents that can debug and recover themselves.</p>
+                    <p>Phase 3 — a self-correcting code-fix agent that
+                    executes Python scripts, diagnoses failures, patches them, and retries
+                    autonomously using a LangGraph state machine with human-in-the-loop
+                    approval, LangSmith tracing, and a 95% fix rate across 20 test cases.
+                    Phase 4 moves into real-world workflow pipelines, Phase 5 covers
+                    production deployment with FastAPI and LangFuse, and Phase 6 is a
+                    controlled multi-agent experiment comparing single-agent vs multi-agent
+                    performance on the same tasks.</p>
+
+                    <p>I'm interested in systems that <strong>anticipate failures, learn from
+                    context, and operate reliably</strong> in production — predictive
+                    maintenance, autonomous research pipelines, or agents that debug and
+                    fix themselves.</p>
                 </div>
             </div>
         </section>
@@ -271,11 +307,33 @@
                         </div>
                     </a>
 
+                    <a href="lightgbm.html" class="article-card" data-category="concept-exploration">
+                        <time class="article-date" datetime="2026-03-22">March 22, 2026</time>
+                        <h3 class="article-title">LightGBM — A Practitioner's Guide</h3>
+                        <p class="article-excerpt">
+                            How LightGBM actually works — leaf-wise growth, histogram binning, and why it often beats XGBoost on tabular data. Includes practical tuning notes and common pitfalls.
+                        </p>
+                        <div class="article-tags">
+                            <span class="article-tag">Concept Exploration</span>
+                        </div>
+                    </a>
+
                     <a href="data-preprocessing.html" class="article-card" data-category="concept-exploration">
                         <time class="article-date" datetime="2026-03-12">March 12, 2026</time>
                         <h3 class="article-title">Data Preprocessing — Concept Exploration</h3>
                         <p class="article-excerpt">
                             A systematic series on preparing data for machine learning —> feature scaling, encoding, missing data, and outlier treatment.
+                        </p>
+                        <div class="article-tags">
+                            <span class="article-tag">Concept Exploration</span>
+                        </div>
+                    </a>
+
+                    <a href="feature-scaling.html" class="article-card" data-category="concept-exploration">
+                        <time class="article-date" datetime="2026-03-12">March 12, 2026</time>
+                        <h3 class="article-title">Data Preprocessing — Feature Scaling Deep Dive</h3>
+                        <p class="article-excerpt">
+                            Why scaling matters, when it doesn't, and how to pick the right method for your model. A concept exploration covering StandardScaler, MinMaxScaler, RobustScaler, and the assumptions each one makes about your data.
                         </p>
                         <div class="article-tags">
                             <span class="article-tag">Concept Exploration</span>

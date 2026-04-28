@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code-Fix Agent — Phase 3 Deep Dive | The Machinist</title>
+    <meta name="description" content="How I built a self-correcting AI agent that executes Python scripts, diagnoses errors, patches them, and retries autonomously — using LangGraph, HITL approval, and a 95% fix rate across 20 test cases.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://themachinist.org/code-agent.html">
+    <meta property="og:title" content="Code-Fix Agent — Phase 3 Deep Dive | The Machinist">
+    <meta property="og:description" content="How I built a self-correcting AI agent that executes Python scripts, diagnoses errors, patches them, and retries autonomously — using LangGraph, HITL approval, and a 95% fix rate across 20 test cases.">
+    <meta property="og:image" content="https://themachinist.org/og-default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Code-Fix Agent — Phase 3 Deep Dive | The Machinist">
+    <meta name="twitter:description" content="How I built a self-correcting AI agent that executes Python scripts, diagnoses errors, patches them, and retries autonomously — using LangGraph, HITL approval, and a 95% fix rate across 20 test cases.">
+    <meta name="twitter:image" content="https://themachinist.org/og-default.png">
+    <link rel="canonical" href="https://themachinist.org/code-agent.html">
+    <meta name="keywords" content="Code Fix Agent, LangGraph, Self-Correcting AI, HITL, Human in the Loop, DeepSeek, LangSmith, Python, Agentic AI">
+    <meta name="author" content="Anudeep Reddy">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="shared.css">
+
+    <style>
+        /* ── Page-level custom scrollbar ── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+        /* ── Header ── */
+        .cfa-header {
+            text-align: left;
+            padding: calc(var(--spacing-xl) + 60px) var(--spacing-md) var(--spacing-lg);
+            background: var(--section-bg);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .cfa-header .container,
+        .cfa-main {
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
+        /* ── Breadcrumb ── */
+        .cfa-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+        .cfa-breadcrumb a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        .cfa-breadcrumb a:hover { color: var(--text-color); }
+        .cfa-breadcrumb-sep { opacity: 0.4; }
+
+        .cfa-series-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+        .cfa-header h1 {
+            font-size: clamp(1.6rem, 4vw, 2.2rem);
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            line-height: 1.2;
+            margin-bottom: 14px;
+            color: var(--text-color);
+        }
+        .cfa-subtitle {
+            font-size: 0.98rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin: 0;
+            max-width: 700px;
+        }
+        .cfa-tech-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 20px;
+        }
+        .cfa-tech-tag {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 3px 10px;
+            letter-spacing: 0.03em;
+        }
+
+        /* ── Main content ── */
+        .cfa-main {
+            padding: 52px 24px 80px;
+        }
+        .cfa-main p {
+            font-size: 0.96rem;
+            line-height: 1.82;
+            color: var(--text-color);
+            margin-bottom: 16px;
+        }
+        .cfa-main h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin: 44px 0 14px;
+            letter-spacing: -0.01em;
+            color: var(--text-color);
+        }
+        .cfa-main h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin: 28px 0 10px;
+            color: var(--text-color);
+        }
+
+        /* ── Callout ── */
+        .cfa-callout {
+            border-left: 3px solid var(--accent);
+            background: var(--section-bg);
+            border-radius: 0 6px 6px 0;
+            padding: 18px 22px;
+            margin: 20px 0 28px;
+        }
+        .cfa-callout p {
+            margin: 0;
+            font-size: 0.93rem;
+            line-height: 1.75;
+        }
+
+        /* ── Stat cards ── */
+        .cfa-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin: 22px 0 30px;
+        }
+        .cfa-stat-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 14px;
+            background: var(--bg-color);
+        }
+        .cfa-stat-label {
+            font-size: 0.68rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+        .cfa-stat-value {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-color);
+            line-height: 1.2;
+        }
+        .cfa-stat-note {
+            margin-top: 4px;
+            font-size: 0.78rem;
+            line-height: 1.45;
+            color: var(--text-secondary);
+        }
+
+        /* ── Card grid ── */
+        .cfa-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 12px;
+            margin: 18px 0 30px;
+        }
+        .cfa-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            background: var(--bg-color);
+        }
+        .cfa-card h4 {
+            margin: 0 0 8px;
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+        .cfa-card p {
+            margin: 0;
+            font-size: 0.84rem;
+            line-height: 1.64;
+            color: var(--text-secondary);
+        }
+        .cfa-grid .cfa-card:last-child:nth-child(odd) {
+            grid-column: 1 / -1;
+            max-width: 600px;
+        }
+
+        /* ── State machine diagram ── */
+        .cfa-diagram-wrap {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            max-width: 820px;
+            margin: 22px auto 30px;
+
+        }
+        .cfa-diagram-label {
+            background: var(--section-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 16px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        .cfa-diagram-body {
+            padding: 20px;
+            background: var(--bg-color);
+            overflow-x: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
+        }
+        .cfa-diagram-body svg {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+        }
+
+        /* ── Pipeline steps ── */
+        .cfa-pipeline {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 22px 0 30px;
+        }
+        .cfa-pipeline-label {
+            background: var(--section-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 16px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        .cfa-pipeline-body {
+            padding: 16px;
+            background: var(--bg-color);
+        }
+        .cfa-step {
+            display: grid;
+            grid-template-columns: 28px 1fr;
+            gap: 12px;
+            margin: 10px 0;
+            align-items: start;
+        }
+        .cfa-step-num {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--text-color);
+            color: var(--bg-color);
+            font-size: 0.7rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .cfa-step-body {
+            font-size: 0.87rem;
+            color: var(--text-color);
+            line-height: 1.62;
+        }
+        .cfa-step-body strong {
+            display: block;
+            margin-bottom: 2px;
+        }
+        .cfa-step-body span {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.81rem;
+            margin-top: 2px;
+        }
+        .cfa-step-arrow {
+            margin: 0 0 0 10px;
+            color: var(--border-color);
+            user-select: none;
+            line-height: 1;
+        }
+
+        /* ── Code blocks ── */
+        .cfa-code-wrap {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 16px 0 22px;
+        }
+        .cfa-code-label {
+            background: var(--section-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 9px 14px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        .cfa-code-block {
+            background: #1a1a1a;
+            color: #d4d4d4;
+            padding: 16px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.8rem;
+            line-height: 1.65;
+            white-space: pre;
+            margin: 0;
+        }
+
+        /* ── State card ── */
+        .cfa-state-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 14px 18px;
+            background: var(--bg-color);
+            margin: 14px 0 22px;
+        }
+        .cfa-state-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+        .cfa-state-fields {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .cfa-field {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.78rem;
+            padding: 3px 9px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            background: var(--section-bg);
+        }
+
+        /* ── Layer stack ── */
+        .cfa-layer-stack {
+            display: grid;
+            gap: 10px;
+            margin: 18px 0 30px;
+        }
+        .cfa-layer {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            background: var(--bg-color);
+        }
+        .cfa-layer-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .cfa-layer-badge {
+            font-size: 0.64rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background: var(--text-color);
+            color: var(--bg-color);
+        }
+        .cfa-layer-file {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.83rem;
+            color: var(--text-secondary);
+        }
+        .cfa-layer p {
+            margin: 0;
+            font-size: 0.86rem;
+            line-height: 1.65;
+            color: var(--text-secondary);
+        }
+
+        /* ── Benchmark table ── */
+        .cfa-table-wrap {
+            overflow-x: auto;
+            margin: 20px 0 30px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
+        }
+
+        .cfa-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 620px;
+        }
+
+        .cfa-badge-done {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(39, 174, 96, 0.12);
+            color: #27ae60;
+            border: 1px solid rgba(39, 174, 96, 0.25);
+        }
+        .cfa-badge-warn {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(231, 76, 60, 0.1);
+            color: #c0392b;
+            border: 1px solid rgba(231, 76, 60, 0.22);
+        }
+
+        /* ── Compare cards ── */
+        .cfa-compare {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 12px;
+            margin: 18px 0 30px;
+        }
+        .cfa-compare-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            background: var(--bg-color);
+        }
+        .cfa-compare-card h4 {
+            margin: 0 0 10px;
+            font-size: 0.88rem;
+            color: var(--text-color);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .cfa-compare-card ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+        .cfa-compare-card li {
+            color: var(--text-secondary);
+            font-size: 0.83rem;
+            line-height: 1.55;
+            margin-bottom: 6px;
+        }
+
+        /* ── Divider ── */
+        .cfa-divider {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 38px 0;
+        }
+
+        /* ── Inline code ── */
+        .cfa-main code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.84em;
+            background: var(--section-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            padding: 1px 5px;
+            color: var(--text-color);
+        }
+
+        /* ── Mobile ── */
+        @media (max-width: 700px) {
+            .cfa-main { padding: 36px 16px 60px; }
+            .cfa-header { padding: calc(var(--spacing-xl) + 60px) 16px 32px; }
+            .cfa-code-block { font-size: 0.74rem; }
+            .cfa-stat-grid { grid-template-columns: repeat(2, 1fr); }
+            .cfa-flow { min-width: 260px; }
+            .cfa-node { min-width: 100px; padding: 7px 14px; font-size: 0.78rem; }
+        }
+    </style>
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <nav id="nav" role="navigation" aria-label="Main navigation">
+        <div class="container">
+            <div class="nav-container">
+                <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <ul>
+                    <li><a href="index.html#projects">Projects</a></li>
+                    <li><a href="index.html#about">About</a></li>
+                    <li><a href="index.html#skills">Skills</a></li>
+                    <li><a href="index.html#learning-log">Learning Log</a></li>
+                    <li><a href="index.html#contact">Contact</a></li>
+                </ul>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                    <div class="toggle-slider">
+                        <svg class="toggle-icon sun-icon" viewBox="0 0 24 24" style="display: block;">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2"/>
+                            <line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" stroke-width="2"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" stroke-width="2"/>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" stroke-width="2"/>
+                            <line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" stroke-width="2"/>
+                            <line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2"/>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" stroke-width="2"/>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <svg class="toggle-icon moon-icon" viewBox="0 0 24 24" style="display: none;">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </div>
+                </button>
+            </div>
+        </div>
+        <div class="mobile-menu">
+            <div class="mobile-menu-header">
+                <button class="close-menu" aria-label="Close menu">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <a href="index.html#projects">Projects</a>
+            <a href="index.html#about">About</a>
+            <a href="index.html#skills">Skills</a>
+            <a href="index.html#learning-log">Learning Log</a>
+            <a href="index.html#contact">Contact</a>
+        </div>
+    </nav>
+
+    <header class="cfa-header">
+        <div class="container">
+            <nav class="cfa-breadcrumb" aria-label="Breadcrumb">
+                <a href="index.html#learning-log">Learning Log</a>
+                <span class="cfa-breadcrumb-sep">/</span>
+                <span>Project Deep Dives</span>
+                <span class="cfa-breadcrumb-sep">/</span>
+                <span style="color: var(--text-color); font-weight: 500;">Code-Fix Agent</span>
+            </nav>
+            <div class="cfa-series-label">Agentic AI · Phase 3</div>
+            <h1>Code-Fix Agent: Self-Correcting AI System</h1>
+            <p class="cfa-subtitle">A goal-directed agent that executes broken Python scripts, reads failures, patches the code, and retries autonomously — built on a LangGraph state machine with human-in-the-loop approval and full LangSmith tracing.</p>
+            <div class="cfa-tech-row">
+                <span class="cfa-tech-tag">Python</span>
+                <span class="cfa-tech-tag">LangGraph</span>
+                <span class="cfa-tech-tag">DeepSeek API</span>
+                <span class="cfa-tech-tag">LangSmith</span>
+                <span class="cfa-tech-tag">subprocess sandbox</span>
+                <span class="cfa-tech-tag">MemorySaver</span>
+            </div>
+        </div>
+    </header>
+
+    <main id="main">
+        <article class="cfa-main">
+
+            <!-- TL;DR -->
+            <h2>TL;DR</h2>
+            <div class="cfa-callout">
+                <p>This is the phase where an agent stops answering questions and starts <strong>pursuing a goal</strong>. The code-fix agent executes a script, reads the failure, diagnoses the root cause, patches the code, and tries again — until the script runs correctly, the cost ceiling is hit, or it runs out of attempts. The loop is expressed as an explicit LangGraph state machine, not a raw while loop.</p>
+            </div>
+
+            <div class="cfa-stat-grid">
+                <div class="cfa-stat-card">
+                    <div class="cfa-stat-label">Fix Rate</div>
+                    <div class="cfa-stat-value">95%</div>
+                    <div class="cfa-stat-note">19 of 20 test scripts fixed correctly</div>
+                </div>
+                <div class="cfa-stat-card">
+                    <div class="cfa-stat-label">Mean Iterations</div>
+                    <div class="cfa-stat-value">2.3</div>
+                    <div class="cfa-stat-note">Most scripts fixed in one diagnose-patch cycle</div>
+                </div>
+                <div class="cfa-stat-card">
+                    <div class="cfa-stat-label">Total Run Cost</div>
+                    <div class="cfa-stat-value">$0.0153</div>
+                    <div class="cfa-stat-note">Across all 20 scripts via DeepSeek API</div>
+                </div>
+                <div class="cfa-stat-card">
+                    <div class="cfa-stat-label">Scripts Run</div>
+                    <div class="cfa-stat-value">20</div>
+                    <div class="cfa-stat-note">0 crashed, 0 hit cost ceiling, 0 hung</div>
+                </div>
+            </div>
+
+            <p>The core concept: the agent is no longer answering a question. It is pursuing a goal — and observing the consequences of its own actions to adjust. That's the distinction between a query-response loop and a goal-directed loop.</p>
+            <p>Code execution is the sharpest use case for this because failure is unambiguous. Either the script runs or it doesn't. Either the output is correct or it isn't. No subjectivity. The exit code is ground truth.</p>
+
+            <hr class="cfa-divider">
+
+            <!-- What Phase 3 adds -->
+            <h2>What Phase 3 Adds</h2>
+            <div class="cfa-compare">
+                <div class="cfa-compare-card">
+                    <h4>Phases 1 &amp; 2</h4>
+                    <ul>
+                        <li>Raw while loop — control flow implicit in conditionals.</li>
+                        <li>Query-driven: user asks, agent finds, agent responds.</li>
+                        <li>One turn per run — loop starts and ends in a single cycle.</li>
+                        <li>No human checkpoint mid-run.</li>
+                    </ul>
+                </div>
+                <div class="cfa-compare-card">
+                    <h4>Phase 3</h4>
+                    <ul>
+                        <li>LangGraph state machine — every state named, every transition explicit.</li>
+                        <li>Goal-directed: agent keeps going until goal is met or resources exhausted.</li>
+                        <li>Reflexion loop — agent reads its own failure history to try a different approach.</li>
+                        <li>Human-in-the-loop checkpoint with interrupt/resume.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <hr class="cfa-divider">
+
+            <!-- Architecture -->
+            <h2>Architecture &amp; State Machine</h2>
+            <p>The agent is a directed graph. Each node is a function. Each edge is a transition — some unconditional, some conditional on the current state. Think of it like a quality control station at a factory: the broken script comes in, gets examined, repaired, approved, tested, and scored. If it passes, it ships. If it fails, it goes back to the repair station with the inspector's notes.</p>
+
+            <div class="cfa-diagram-wrap">
+                <div class="cfa-diagram-label">State Machine — Execution Flow</div>
+                <div class="cfa-diagram-body">
+                    <svg viewBox="0 0 740 400" width="740" height="400" xmlns="http://www.w3.org/2000/svg" font-family="Inter, -apple-system, sans-serif" aria-label="State machine execution flow diagram">                        <defs>
+                            <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+                                <path d="M0,0 L0,10 L10,5 z" fill="var(--text-secondary)"/>
+                            </marker>
+                        </defs>
+                        <!-- START -->
+                        <rect x="310" y="3" width="140" height="36" rx="15" fill="var(--text-color)"/>
+                        <text x="380" y="23" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="var(--bg-color)">START</text>
+
+                        <!-- START → execute -->
+                        <line x1="380" y1="40" x2="380" y2="68" stroke="var(--text-secondary)" stroke-width="1.25" marker-end="url(#arr)"/>
+
+                        <!-- execute -->
+                        <rect x="310" y="70" width="140" height="34" rx="6" fill="var(--bg-color)" stroke="var(--border-color)" stroke-width="1.25"/>
+                        <text x="380" y="87" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="var(--text-color)">execute</text>
+
+                        <!-- execute → should_continue -->
+                        <line x1="380" y1="104" x2="380" y2="132" stroke="var(--text-secondary)" stroke-width="1.25" marker-end="url(#arr)"/>
+
+                        <!-- should_continue -->
+                        <rect x="280" y="134" width="200" height="34" rx="6" fill="var(--section-bg)" stroke="var(--border-color)" stroke-width="1.25"/>
+                        <text x="380" y="151" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="var(--text-color)">should_continue?</text>
+
+                        <!-- ── LEFT BRANCH: exit_code ≠ 0 ── -->
+                        <!-- horizontal line left -->
+                        <line x1="280" y1="151" x2="120" y2="151" stroke="var(--text-secondary)" stroke-width="1.25"/>
+                        <!-- down to diagnose -->
+                        <line x1="120" y1="151" x2="120" y2="207" stroke="var(--text-secondary)" stroke-width="1.25" marker-end="url(#arr)"/>
+                        <text x="150" y="140" text-anchor="middle" font-size="11" fill="var(--text-secondary)" font-style="italic">exit_code ≠ 0</text>
+
+
+                        <!-- diagnose -->
+                        <rect x="50" y="209" width="140" height="34" rx="6" fill="var(--bg-color)" stroke="var(--border-color)" stroke-width="1.25"/>
+                        <text x="120" y="226" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="var(--text-color)">diagnose</text>
+
+                        <!-- diagnose → patch -->
+                        <line x1="120" y1="243" x2="120" y2="271" stroke="var(--text-secondary)" stroke-width="1.25" marker-end="url(#arr)"/>
+
+                        <!-- patch -->
+                        <rect x="50" y="273" width="140" height="34" rx="6" fill="var(--bg-color)" stroke="var(--border-color)" stroke-width="1.25"/>
+                        <text x="120" y="290" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="var(--text-color)">patch</text>
+
+                        <!-- patch → human_approval -->
+                        <line x1="120" y1="307" x2="120" y2="335" stroke="var(--text-secondary)" stroke-width="1.25" marker-end="url(#arr)"/>
+
+                        <!-- human_approval -->
+                        <rect x="42" y="337" width="156" height="34" rx="6" fill="var(--bg-color)" stroke="var(--border-color)" stroke-width="1.25"/>
+                        <text x="120" y="354" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="var(--text-color)">human_approval</text>
+
+                        <!-- approved → re-execute (loop back up, left side) -->
+                        <line x1="42" y1="354" x2="20" y2="354" stroke="var(--text-secondary)" stroke-width="1.25"/>
+                        <line x1="20" y1="354" x2="20" y2="87" stroke="var(--text-secondary)" stroke-width="1.25"/>
+                        <line x1="20" y1="87" x2="305" y2="87" stroke="var(--text-secondary)" stroke-width="1.25" marker-end="url(#arr)"/>
+                        <text x="14" y="225" text-anchor="middle" font-size="11" fill="var(--text-secondary)" font-style="italic" transform="rotate(-90,14,230)">approved → re-execute</text>
+
+                        <!-- rejected → diagnose (right side of approval box) -->
+                        <line x1="198" y1="354" x2="220" y2="354" stroke="var(--text-secondary)" stroke-width="1.25"/>
+                        <line x1="220" y1="354" x2="220" y2="228" stroke="var(--text-secondary)" stroke-width="1.25" marker-end="url(#arr)"/>
+                        <line x1="220" y1="226" x2="192" y2="226" stroke="var(--text-secondary)" stroke-width="1.25" marker-end="url(#arr)"/>
+                        <text x="236" y="300" text-anchor="middle" font-size="11" fill="var(--text-secondary)" font-style="italic" transform="rotate(90,232,300)">rejected</text>
+
+                        <!-- ── CENTRE BRANCH: exit_code = 0 ── -->
+                        <!-- vertical down from should_continue centre -->
+                        <line x1="380" y1="168" x2="380" y2="207" stroke="var(--text-secondary)" stroke-width="1.25" marker-end="url(#arr)"/>
+                        <text x="392" y="190" font-size="11" fill="var(--text-secondary)" font-style="italic">exit_code = 0</text>
+
+                        <!-- evaluate -->
+                        <rect x="310" y="209" width="140" height="34" rx="6" fill="var(--bg-color)" stroke="var(--border-color)" stroke-width="1.25"/>
+                        <text x="380" y="226" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="var(--text-color)">evaluate</text>
+
+                        <!-- evaluate → score? -->
+                        <line x1="380" y1="243" x2="380" y2="271" stroke="var(--text-secondary)" stroke-width="1.25" marker-end="url(#arr)"/>
+
+                        <!-- score ≥ 7? -->
+                        <rect x="300" y="273" width="160" height="34" rx="6" fill="var(--section-bg)" stroke="var(--border-color)" stroke-width="1.25"/>
+                        <text x="380" y="290" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="var(--text-color)">score ≥ 7?</text>
+
+                        <!-- score yes → DONE -->
+                        <line x1="380" y1="307" x2="380" y2="335" stroke="var(--text-secondary)" stroke-width="1.25" marker-end="url(#arr)"/>
+                        <text x="392" y="325" font-size="11" fill="var(--text-secondary)" font-style="italic">yes</text>
+
+                        <!-- DONE -->
+                        <rect x="320" y="337" width="120" height="30" rx="15" fill="var(--text-color)"/>
+                        <text x="380" y="352" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="var(--bg-color)">END</text>
+
+                        <!-- score no → back to diagnose -->
+                        <line x1="300" y1="290" x2="250" y2="290" stroke="var(--text-secondary)" stroke-width="1.25"/>
+                        <line x1="250" y1="290" x2="250" y2="226" stroke="var(--text-secondary)" stroke-width="1.25"/>
+                        <line x1="250" y1="226" x2="192" y2="226" stroke="var(--text-secondary)" stroke-width="1.25" marker-end="url(#arr)"/>
+                        <text x="255" y="262" font-size="11" fill="var(--text-secondary)" font-style="italic">no → diagnose</text>
+
+                        <!-- ── RIGHT BRANCH: cost/iter ceiling ── -->
+                        <!-- horizontal line right -->
+                        <line x1="480" y1="151" x2="640" y2="151" stroke="var(--text-secondary)" stroke-width="1.25"/>
+                        <line x1="640" y1="151" x2="640" y2="207" stroke="var(--text-secondary)" stroke-width="1.25" marker-end="url(#arr)"/>
+
+                        <text text-anchor="middle" font-size="11" fill="var(--text-secondary)" font-style="italic">
+                            <tspan x="570" y="130">cost &gt; ceiling</tspan>
+                            <tspan x="570" dy="14">or iters ≥ max</tspan>
+                        </text>
+
+                        <!-- END -->
+                        <rect x="570" y="209" width="140" height="30" rx="15" fill="var(--text-color)"/>
+                        <text x="640" y="224" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="var(--bg-color)">END</text>
+                    </svg>
+                </div>
+                </div>
+
+            <!-- File structure -->
+            <h3>The Files</h3>
+            <div class="cfa-layer-stack">
+                <div class="cfa-layer">
+                    <div class="cfa-layer-head">
+                        <span class="cfa-layer-badge">Core</span>
+                        <span class="cfa-layer-file">graph.py</span>
+                    </div>
+                    <p>Contains only two things: the <code>AgentState</code> TypedDict that declares every field the agent tracks, and <code>build_graph()</code> that wires nodes and edges into a compiled LangGraph object. Nothing about how nodes work lives here — only how they connect.</p>
+                </div>
+                <div class="cfa-layer">
+                    <div class="cfa-layer-head">
+                        <span class="cfa-layer-badge">Core</span>
+                        <span class="cfa-layer-file">nodes.py</span>
+                    </div>
+                    <p>All the logic. Six node functions and three edge functions. Every LLM call, every tool dispatch, every conditional routing decision lives here.</p>
+                </div>
+                <div class="cfa-layer">
+                    <div class="cfa-layer-head">
+                        <span class="cfa-layer-badge">Core</span>
+                        <span class="cfa-layer-file">tools.py</span>
+                    </div>
+                    <p>One function: <code>execute_python</code>. Writes code to a temp file, runs it in a subprocess with a hard timeout, captures stdout and stderr, returns a structured result dict. No LLM calls. No graph knowledge.</p>
+                </div>
+                <div class="cfa-layer">
+                    <div class="cfa-layer-head">
+                        <span class="cfa-layer-badge">Entry</span>
+                        <span class="cfa-layer-file">main.py</span>
+                    </div>
+                    <p>CLI entry point. Builds initial state, invokes the graph, handles the human approval interrupt loop, prints the final report, and saves a structured run log to disk.</p>
+                </div>
+                <div class="cfa-layer">
+                    <div class="cfa-layer-head">
+                        <span class="cfa-layer-badge">Scripts</span>
+                        <span class="cfa-layer-file">scripts/</span>
+                    </div>
+                    <p><code>benchmark.py</code> — systematic evaluation across all 20 broken scripts. <code>analyze_failures.py</code> — extracts failed runs from benchmark JSON. <code>regression_check.py</code> — compares results against a stored baseline. <code>test_resilience.py</code> — simulates the four failure modes.</p>
+                </div>
+            </div>
+
+            <hr class="cfa-divider">
+
+            <!-- Pipeline walk-through -->
+            <h2>Pipeline Walk-Through: attribute_error.py</h2>
+            <p>Here's what happens when you run a real broken script through the agent, end to end.</p>
+
+            <div class="cfa-code-wrap">
+                <div class="cfa-code-label">The broken script — attribute_error.py</div>
+                <pre class="cfa-code-block">class Dog:
+    def __init__(self, name):
+        self.name = name
+
+d = Dog("Rex")
+print(d.age)   # Dog has no attribute 'age'</pre>
+            </div>
+
+            <div class="cfa-pipeline">
+                <div class="cfa-pipeline-label">Execution Walk-Through</div>
+                <div class="cfa-pipeline-body">
+
+                    <div class="cfa-step">
+                        <div class="cfa-step-num">1</div>
+                        <div class="cfa-step-body">
+                            <strong>execute (iteration 1)</strong>
+                            Script is written to a temp file and run in a subprocess. Exit code 1. stderr contains the traceback.
+                            <span>State: exit_code=1 · error=full traceback · iterations=1 · attempt_history=[]</span>
+                        </div>
+                    </div>
+
+                    <div class="cfa-code-wrap" style="margin:8px 0 8px 40px;">
+                        <div class="cfa-code-label">stderr output</div>
+                        <pre class="cfa-code-block">AttributeError: 'Dog' object has no attribute 'age'</pre>
+                    </div>
+
+                    <div class="cfa-step-arrow" style="margin-left:10px;">│</div>
+                    <div class="cfa-step">
+                        <div class="cfa-step-num">2</div>
+                        <div class="cfa-step-body">
+                            <strong>should_continue</strong>
+                            Cost ceiling not exceeded. Exit code ≠ 0. Iterations (1) &lt; MAX (5). Routes to <code>diagnose</code>.
+                        </div>
+                    </div>
+
+                    <div class="cfa-step-arrow" style="margin-left:10px;">│</div>
+                    <div class="cfa-step">
+                        <div class="cfa-step-num">3</div>
+                        <div class="cfa-step-body">
+                            <strong>diagnose</strong>
+                            LLM receives the broken code and traceback. Asked to identify root cause in 2–3 sentences without suggesting a fix.
+                            <span>State: diagnosis=LLM explanation · total_cost_usd incremented · total_tokens incremented</span>
+                        </div>
+                    </div>
+
+                    <div class="cfa-step-arrow" style="margin-left:10px;">│</div>
+                    <div class="cfa-step">
+                        <div class="cfa-step-num">4</div>
+                        <div class="cfa-step-body">
+                            <strong>patch</strong>
+                            LLM receives broken code + error + diagnosis. Instructed to return corrected code inside a code fence only.
+                        </div>
+                    </div>
+
+                    <div class="cfa-code-wrap" style="margin:8px 0 8px 40px;">
+                        <div class="cfa-code-label">Patched code</div>
+                        <pre class="cfa-code-block">class Dog:
+    def __init__(self, name):
+        self.name = name
+        self.age = None
+
+d = Dog("Rex")
+print(d.age)</pre>
+                    </div>
+
+                    <div class="cfa-step-arrow" style="margin-left:10px;">│</div>
+                    <div class="cfa-step">
+                        <div class="cfa-step-num">5</div>
+                        <div class="cfa-step-body">
+                            <strong>human_approval</strong>
+                            In benchmark mode (<code>bypass_hitl=True</code>), auto-approves. In interactive mode, the graph suspends via <code>interrupt()</code>. main.py displays a unified diff and prompts for y/n. On resume, <code>human_approval</code> is set to "approved".
+                        </div>
+                    </div>
+
+                    <div class="cfa-step-arrow" style="margin-left:10px;">│</div>
+                    <div class="cfa-step">
+                        <div class="cfa-step-num">6</div>
+                        <div class="cfa-step-body">
+                            <strong>execute (iteration 2)</strong>
+                            Patched code runs. Exit code 0. stdout: "None" (the default value of self.age).
+                            <span>State: exit_code=0 · stdout="None" · error=None · iterations=2</span>
+                        </div>
+                    </div>
+
+                    <div class="cfa-step-arrow" style="margin-left:10px;">│</div>
+                    <div class="cfa-step">
+                        <div class="cfa-step-num">7</div>
+                        <div class="cfa-step-body">
+                            <strong>evaluate</strong>
+                            LLM receives original code, fixed code, and actual output. Asked to score correctness 1–10 with JSON reasoning. Score: 9. Passes threshold of 7. Status set to "done".
+                            <span>Score 9 — the AttributeError is resolved, default value of None is reasonable, but not the only correct choice.</span>
+                        </div>
+                    </div>
+
+                    <div class="cfa-step-arrow" style="margin-left:10px;">│</div>
+                    <div class="cfa-step">
+                        <div class="cfa-step-num">8</div>
+                        <div class="cfa-step-body">
+                            <strong>end</strong>
+                            Benchmark record: status=done · fixed=true · iterations=2 · score=9 · cost=$0.00037 · elapsed=4.42s
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="cfa-divider">
+
+            <!-- Technical deep dive -->
+            <h2>Technical Deep Dive</h2>
+
+            <h3>LangGraph vs. Raw While Loop</h3>
+            <div class="cfa-callout">
+                <p>A raw while loop is like a chef who keeps the recipe in their head — they know what step comes next because they remember where they are. A LangGraph state machine is like a recipe card with checkboxes: each step is written down, you can see what's done, and anyone can pick up mid-recipe without losing context.</p>
+            </div>
+            <p>The practical difference: adding human approval to a raw loop means adding more variables, more conditionals, and more mental tracing. In LangGraph, it meant adding two fields to <code>AgentState</code> and one new node. The rest of the graph didn't change.</p>
+
+            <h3>Typed State and Observability</h3>
+            <p><code>AgentState</code> is a TypedDict with 18 fields. LangGraph validates at compile time — if a node returns a key not in the schema, it raises immediately, not when that key is accessed at runtime. This turns silent bugs into loud, early errors.</p>
+            <div class="cfa-state-card">
+                <div class="cfa-state-title">Key AgentState Fields</div>
+                <div class="cfa-state-fields">
+                    <span class="cfa-field">code</span>
+                    <span class="cfa-field">exit_code</span>
+                    <span class="cfa-field">stdout</span>
+                    <span class="cfa-field">error</span>
+                    <span class="cfa-field">diagnosis</span>
+                    <span class="cfa-field">patch_explanation</span>
+                    <span class="cfa-field">human_approval</span>
+                    <span class="cfa-field">evaluator_score</span>
+                    <span class="cfa-field">status</span>
+                    <span class="cfa-field">iterations</span>
+                    <span class="cfa-field">attempt_history</span>
+                    <span class="cfa-field">total_cost_usd</span>
+                    <span class="cfa-field">total_tokens</span>
+                    <span class="cfa-field">bypass_hitl</span>
+                </div>
+            </div>
+
+            <h3>The Reflexion Pattern</h3>
+            <p>On the first failed attempt, <code>node_diagnose</code> receives the current code and error. On subsequent attempts, it receives the full history of prior attempts — each containing the code tried, the error it produced, the diagnosis made, and the patch applied. The prompt changes from "diagnose this error" to "here is everything that was tried and why it failed — what is a different approach?"</p>
+            <div class="cfa-callout">
+                <p><strong>Archival timing is critical.</strong> <code>attempt_history</code> is archived by <code>node_execute</code> before it overwrites the error fields with new results. If archival happened after the new execution results were written, the wrong error would be saved. This ordering is enforced by the graph structure, not a comment in the code.</p>
+            </div>
+
+            <h3>Human-in-the-Loop with interrupt/resume</h3>
+            <p>When <code>node_human_approval</code> calls <code>interrupt(payload)</code>, the graph stops. The entire state is checkpointed by <code>MemorySaver</code>. Control returns to <code>main.py</code>, which displays a unified diff and prompts the user. When the user responds, <code>main.py</code> calls <code>graph.invoke(Command(resume=decision), config)</code> with the same thread ID — and the graph resumes from the exact point where it suspended.</p>
+            <p>This matters architecturally: in a production system, the resume signal wouldn't come from the terminal — it would come from a webhook, a UI button, or a message queue. The <code>interrupt()/resume</code> pattern supports all of these without changing the graph.</p>
+
+            <h3>Sandboxed Code Execution</h3>
+            <p><code>execute_python</code> writes code to a temp file and runs it with <code>subprocess.run()</code>. This is intentional isolation. If you used Python's <code>exec()</code> built-in, the code would run inside the agent's own process — a script that calls <code>sys.exit()</code> or enters an infinite loop would crash or hang the agent itself. With subprocess isolation, a crash is just a non-zero exit code and a stderr string.</p>
+            <p>The temp file is deleted in a <code>finally</code> block — even if the subprocess crashes or times out, no orphaned temp files accumulate across runs.</p>
+
+            <h3>LLM-Based Evaluator</h3>
+            <p>The evaluator is what separates "the code runs" from "the code is correct." Exit code 0 means no exception was raised. It doesn't mean the output is right. <code>logic_error.py</code> proved this: the inverted Fahrenheit-to-Celsius formula ran cleanly and exited 0, but produced 180.0 for 212°F instead of the correct 100.0.</p>
+            <p>When the evaluator scores below 7, it doesn't just fail the run — it sends the agent back to <code>node_diagnose</code> with the evaluator's specific feedback. The agent now knows not just that its fix was wrong, but precisely why.</p>
+
+            <h3>Cost Tracking and Guards</h3>
+            <div class="cfa-grid">
+                <div class="cfa-card">
+                    <h4>Cost Ceiling ($0.10/run)</h4>
+                    <p>Checked first in <code>should_continue</code> before anything else. Money gates go first — even a successful fix on the ceiling-crossing iteration terminates as <code>cost_exceeded</code>.</p>
+                </div>
+                <div class="cfa-card">
+                    <h4>Max Iterations (5)</h4>
+                    <p>Checked after the cost gate. Prevents runaway cost on cases where the agent consistently makes the wrong diagnosis or the problem is structurally unfixable.</p>
+                </div>
+                <div class="cfa-card">
+                    <h4>Execution Timeout (10s)</h4>
+                    <p>Subprocess is killed after 10 seconds via SIGKILL. The agent receives a synthetic <code>timed_out=True</code> result with a readable error string — it correctly diagnosed <code>infinite_loop.py</code> from this synthetic message.</p>
+                </div>
+                <div class="cfa-card">
+                    <h4>Input Validation</h4>
+                    <p>Non-empty code check before writing to disk. JSON parse failure in <code>node_evaluate</code> defaults to score=3. Missing code fences in <code>node_patch</code> fall back to the raw response.</p>
+                </div>
+            </div>
+
+            <hr class="cfa-divider">
+
+            <!-- Benchmark results -->
+            <h2>Benchmark Results — 20 Scripts</h2>
+            <p>The final run across all 20 broken scripts. <code>bypass_hitl=True</code> auto-approved every patch, making the run non-interactive and reproducible.</p>
+
+            <div class="cfa-table-wrap">
+                <table class="cfa-table">
+                    <thead>
+                        <tr>
+                            <th>Script</th>
+                            <th>Status</th>
+                            <th>Iter</th>
+                            <th>Score</th>
+                            <th>Cost</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>attribute_error.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>9/10</td><td>$0.0004</td><td>4.4s</td></tr>
+                        <tr><td>dict_mutation.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>10/10</td><td>$0.0003</td><td>4.2s</td></tr>
+                        <tr><td>encoding_error.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>10/10</td><td>$0.0004</td><td>4.6s</td></tr>
+                        <tr><td>file_not_found.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>10/10</td><td>$0.0004</td><td>3.6s</td></tr>
+                        <tr><td>import_error.py</td><td><span class="cfa-badge-warn">not fixed</span></td><td>5</td><td>2/10</td><td>$0.0029</td><td>24.3s</td></tr>
+                        <tr><td>index_error.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>10/10</td><td>$0.0003</td><td>3.4s</td></tr>
+                        <tr><td>infinite_loop.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>10/10</td><td>$0.0003</td><td>14.3s</td></tr>
+                        <tr><td>key_error.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>9/10</td><td>$0.0003</td><td>4.2s</td></tr>
+                        <tr><td>logic_error.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>10/10</td><td>$0.0007</td><td>7.2s</td></tr>
+                        <tr><td>none_type_error.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>10/10</td><td>$0.0003</td><td>3.9s</td></tr>
+                        <tr><td>off_by_one.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>10/10</td><td>$0.0004</td><td>4.7s</td></tr>
+                        <tr><td>recursion_error.py</td><td><span class="cfa-badge-done">done</span></td><td>3</td><td>9/10</td><td>$0.0012</td><td>10.0s</td></tr>
+                        <tr><td>string_format_error.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>10/10</td><td>$0.0004</td><td>4.6s</td></tr>
+                        <tr><td>syntax_error.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>10/10</td><td>$0.0003</td><td>3.9s</td></tr>
+                        <tr><td>tricky_error.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>9/10</td><td>$0.0005</td><td>14.6s</td></tr>
+                        <tr><td>type_error.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>10/10</td><td>$0.0004</td><td>6.3s</td></tr>
+                        <tr><td>unbound_local.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>10/10</td><td>$0.0004</td><td>4.8s</td></tr>
+                        <tr><td>value_error.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>10/10</td><td>$0.0003</td><td>3.8s</td></tr>
+                        <tr><td>wrong_return.py</td><td><span class="cfa-badge-done">done</span></td><td>4</td><td>10/10</td><td>$0.0020</td><td>19.5s</td></tr>
+                        <tr><td>zero_division.py</td><td><span class="cfa-badge-done">done</span></td><td>2</td><td>9/10</td><td>$0.0004</td><td>4.9s</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="cfa-callout">
+                <p><strong>The one failure is a sandbox constraint, not an agent failure.</strong> <code>import_error.py</code> tries to import numpy and pandas, which aren't installed in the agent's environment. The agent correctly identified the missing modules — but every attempted fix either renamed the imports, swapped to other uninstalled libraries, or rewrote the functionality in ways the evaluator scored as losing the original intent. The fix rate of 95% is a precise claim: this agent, these 20 scripts, this environment, these parameters.</p>
+            </div>
+
+            <hr class="cfa-divider">
+
+            <!-- Resilience testing -->
+            <h2>Resilience Testing</h2>
+            <div class="cfa-grid">
+                <div class="cfa-card">
+                    <h4>Execution Timeout</h4>
+                    <p>Agent is given <code>while True: pass</code>. Times out after 10 seconds, receives the synthetic timeout error string, diagnoses an infinite loop, and either fixes it or blocks at MAX_ITERATIONS. A crash is not acceptable. All four tests pass.</p>
+                </div>
+                <div class="cfa-card">
+                    <h4>Cost Ceiling</h4>
+                    <p>Agent is given normal code but with <code>total_cost_usd</code> pre-set to 999.0. The first call to <code>should_continue</code> sees cost above ceiling and routes to "end" — before any LLM call is made. Status: <code>cost_exceeded</code>.</p>
+                </div>
+                <div class="cfa-card">
+                    <h4>Max Iterations</h4>
+                    <p>Agent is given broken syntax with <code>iterations</code> pre-set to MAX_ITERATIONS. The first <code>should_continue</code> check routes to "end". Status: "blocked". No runaway.</p>
+                </div>
+                <div class="cfa-card">
+                    <h4>Invalid API Key</h4>
+                    <p><code>DEEPSEEK_API_KEY</code> is temporarily replaced with garbage. The test asserts the final status is not "done" — either the agent raises an exception or returns "blocked". The original key is restored in a <code>finally</code> block.</p>
+                </div>
+            </div>
+
+            <hr class="cfa-divider">
+
+            <!-- Guardrails and known limits -->
+            <h2>Guardrails &amp; Known Limits</h2>
+
+            <h3>Known Limitations</h3>
+            <div class="cfa-grid">
+                <div class="cfa-card">
+                    <h4>No pip access in sandbox</h4>
+                    <p>Any script requiring an uninstalled library cannot be fixed by installing it. The agent will exhaust iterations trying to rewrite without the library — often the wrong approach.</p>
+                </div>
+                <div class="cfa-card">
+                    <h4>Evaluator relies on intent inference</h4>
+                    <p>Without a ground truth <code>expected_output</code>, the evaluator infers intent from the original code. Usually correct, not guaranteed. Supplying expected output would improve accuracy for logic errors.</p>
+                </div>
+                <div class="cfa-card">
+                    <h4>No rejection cap</h4>
+                    <p>A human can reject every patch indefinitely. A production system should add a <code>rejection_count</code> field to state and terminate with "blocked" after N rejections.</p>
+                </div>
+            </div>
+
+            <h3>The Typo Bug</h3>
+            <div class="cfa-callout">
+                <p>A typo crept into the <code>bypass_hitl</code> field name — written as <code>bypass_hit1</code> (digit one) in one location while referenced as <code>bypass_hitl</code> (lowercase L) elsewhere. In benchmark mode, the auto-approve path was never triggered — the graph reached <code>interrupt()</code> and waited for human input that was never coming. The bug was caught when the benchmark hung without output. <strong>Typos in dict keys are silent killers.</strong> LangGraph validates node return values, not key access within node functions. The only defenses are careful review, consistent naming conventions, and integration tests that exercise the bypass path.</p>
+            </div>
+
+            <hr class="cfa-divider">
+
+            <!-- Key learnings -->
+            <h2>Key Learnings</h2>
+            <div class="cfa-grid">
+                <div class="cfa-card">
+                    <h4>Explicit state is not a luxury</h4>
+                    <p>Externalizing agent state into a typed schema made debugging fast and extension cheap. Adding human approval required two new fields and one new node — nothing else changed.</p>
+                </div>
+                <div class="cfa-card">
+                    <h4>exit_code 0 ≠ correctness</h4>
+                    <p>The evaluator is the most important addition. Any agent that treats execution success as correctness will produce confidently wrong results. One more LLM call per success — it's the call that makes the system trustworthy.</p>
+                </div>
+                <div class="cfa-card">
+                    <h4>Reflexion requires designed memory</h4>
+                    <p>Getting the archival timing right — saving the previous attempt before overwriting current error fields — required explicit reasoning about node order. The graph structure enforces it.</p>
+                </div>
+                <div class="cfa-card">
+                    <h4>Instrumentation is not optional</h4>
+                    <p>LangSmith tracing immediately showed that <code>node_diagnose</code> and <code>node_evaluate</code> have the highest latency (2–4s each). Without tracing, this would have required manual timing instrumentation.</p>
+                </div>
+                <div class="cfa-card">
+                    <h4>Sandbox design shapes what you can fix</h4>
+                    <p>The 5% failure rate is entirely explained by the sandbox design choice: no pip access. Understanding where your agent fails — and whether those are agent bugs or environmental constraints — requires structured logging.</p>
+                </div>
+                <div class="cfa-card">
+                    <h4>Typos in dict keys are silent</h4>
+                    <p>No error. No stack trace. Just the wrong branch taken silently. The only defenses are code review, consistent conventions, and integration tests that exercise every path.</p>
+                </div>
+            </div>
+
+            <hr class="cfa-divider">
+
+            <!-- Appendix -->
+            <h2>Appendix: Run Locally</h2>
+            <div class="cfa-code-wrap">
+                <div class="cfa-code-label">Quickstart</div>
+                <pre class="cfa-code-block">git clone https://github.com/anudeepreddy332/code-agent.git
+uv sync
+uv run python main.py scripts/broken_scripts/attribute_error.py</pre>
+            </div>
+            <p><strong>Core files:</strong> <code>graph.py</code>, <code>nodes.py</code>, <code>tools.py</code>, <code>main.py</code></p>
+            <p><strong>Repository:</strong> <a href="https://github.com/anudeepreddy332/code-agent" target="_blank" rel="noopener noreferrer">code-agent on GitHub →</a></p>
+
+            <a href="index.html#projects" class="back-link">← Back to Projects</a>
+
+        </article>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="mailto:anudeepreddy332@gmail.com" aria-label="Email">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                </a>
+                <a href="https://linkedin.com/in/anudeep-reddy-mutyala" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+                        <rect x="2" y="9" width="4" height="12"/>
+                        <circle cx="4" cy="4" r="2"/>
+                    </svg>
+                </a>
+                <a href="https://github.com/anudeepreddy332" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+                    </svg>
+                </a>
+            </div>
+            <p class="copyright">© 2025 The Machinist. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="shared.js"></script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": "Code-Fix Agent — Phase 3 Deep Dive | The Machinist",
+      "author": {
+        "@type": "Person",
+        "name": "Anudeep Reddy",
+        "url": "https://themachinist.org"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "The Machinist",
+        "url": "https://themachinist.org"
+      },
+      "url": "https://themachinist.org/code-agent.html"
+    }
+    </script>
+</body>
+</html>
