@@ -81,6 +81,15 @@
                     <li><a href="#learning-log">Learning Log</a></li>
                     <li><a href="#contact">Contact</a></li>
                 </ul>
+                <div class="site-search" role="search">
+                    <button class="site-search-toggle" type="button" aria-label="Open site search" aria-expanded="false" aria-controls="siteSearch">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </button>
+                    <input type="search" id="siteSearch" class="site-search-input" aria-label="Search projects and learning log" placeholder="Search">
+                </div>
                 <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
                     <div class="toggle-slider">
                         <svg class="toggle-icon sun-icon" viewBox="0 0 24 24" style="display: block;">
@@ -121,7 +130,7 @@
     <header>
         <div class="container">
             <h1>The Machinist</h1>
-            <p class="subtitle">Applied Machine Learning Engineer • End-to-end ML pipelines • Predictive systems • Decision automation • Risk modeling</p>
+            <p class="subtitle">AI Engineer — Agentic Systems & LLM Applications • Tool Calling • RAG • LangGraph • ML Systems</p>
             <div class="cta-group">
                 <a href="#projects" class="cta">View Work</a>
             </div>
@@ -132,8 +141,13 @@
         <section id="projects" aria-labelledby="projects-heading">
             <div class="container">
                 <h2 id="projects-heading">Projects</h2>
-                <div class="projects-grid">
-                    <a href="code-agent.html" class="article-card" data-category="projects">
+                <div class="filter-buttons" role="group" aria-label="Filter projects">
+                    <button class="filter-btn active" data-filter="all" aria-pressed="true">All</button>
+                    <button class="filter-btn" data-filter="agentic" aria-pressed="false">Agentic AI</button>
+                    <button class="filter-btn" data-filter="ml" aria-pressed="false">Machine Learning</button>
+                </div>
+                <div class="projects-grid" id="projectsGrid">
+                    <a href="code-agent.html" class="article-card" data-category="agentic">
                         <h3 class="article-title">Code-Fix Agent: Self-Correcting AI System</h3>
                         <div class="project-tech">
                             <span class="tech-tag">Python</span>
@@ -145,7 +159,32 @@
                         <p class="article-excerpt">A goal-directed AI agent that takes broken Python scripts, executes them, diagnoses the failure, patches the code, and retries — autonomously. Built with a LangGraph state machine, human-in-the-loop approval, LangSmith tracing, and a 95% fix rate across 20 diverse error types. Phase 3 of a 6-phase agentic AI curriculum.</p>
                     </a>
 
-                    <a href="https://github.com/anudeepreddy332/bosch-production-line-performance-prediction" target="_blank" rel="noopener noreferrer" class="article-card" data-category="projects">
+                    <a href="./knowledge-agent.html" class="article-card" data-category="agentic">
+                        <h3 class="article-title">Knowledge Agent — Persistent RAG with Hybrid Search</h3>
+                        <div class="project-tech">
+                            <span class="tech-tag">Python</span>
+                            <span class="tech-tag">LangGraph</span>
+                            <span class="tech-tag">ChromaDB</span>
+                            <span class="tech-tag">BM25</span>
+                            <span class="tech-tag">Sentence Transformers</span>
+                        </div>
+                        <p class="article-excerpt">Local memory-augmented agent with hybrid retrieval (BM25 + dense + cross-encoder reranking), claim verification, and persistent session memory. 92% accuracy, 100% tool-routing accuracy on adversarial test cases. Phase 2 of a 6-phase agentic AI curriculum.</p>
+                    </a>
+
+                    <a href="./cli-research-agent.html" class="article-card" data-category="agentic">
+                        <h3 class="article-title">CLI Research Agent — Raw Agent Loop + LangGraph Rebuild</h3>
+                        <div class="project-tech">
+                            <span class="tech-tag">Python</span>
+                            <span class="tech-tag">DeepSeek API</span>
+                            <span class="tech-tag">Tavily</span>
+                            <span class="tech-tag">httpx</span>
+                            <span class="tech-tag">BeautifulSoup</span>
+                            <span class="tech-tag">LangGraph</span>
+                        </div>
+                        <p class="article-excerpt">Terminal-based research agent built from scratch using OpenAI-compatible tool-calling — no frameworks. Takes a question, searches the web, reads source pages, writes a structured markdown report. Later rebuilt with LangGraph to compare raw loop vs. state machine execution. Phase 1 of a 6-phase agentic AI curriculum.</p>
+                    </a>
+
+                    <a href="https://github.com/anudeepreddy332/bosch-production-line-performance-prediction" target="_blank" rel="noopener noreferrer" class="article-card" data-category="ml">
                         <h3 class="article-title">Bosch Production Line: Predictive Quality Control</h3>
                         <div class="project-tech">
                             <span class="tech-tag">Python</span>
@@ -157,7 +196,7 @@
                         <p class="article-excerpt">End-to-end ML pipeline predicting manufacturing failures on 1.18M rows with 171:1 class imbalance. Engineered path features revealing 72× failure rate signal — certain station paths fail at 41.7% vs 0.58% global mean. Chunk-aware CV and phased feature roadmap progressing from MCC 0.19 → 0.33, targeting ≥ 0.52.</p>
                     </a>
 
-                    <a href="nhtsa-case-study.html" class="article-card" data-category="projects">
+                    <a href="nhtsa-case-study.html" class="article-card" data-category="ml">
                         <h3 class="article-title">Silent Recalls: Live Vehicle Safety Monitoring</h3>
                         <div class="project-tech">
                             <span class="tech-tag">Python</span>
@@ -168,7 +207,7 @@
                         </div>
                         <p class="article-excerpt">Production-grade ETL pipeline monitoring NHTSA complaints with live risk tracking. Automated detection of vehicles with dangerous complaint-to-recall ratios. GMC Sierra 1500: 445 complaints, zero recalls. Weekly automated runs with hash-based alerting.</p>
                     </a>
-                    <a href="bearing-failure-prediction-case-study.html" class="article-card" data-category="projects">
+                    <a href="bearing-failure-prediction-case-study.html" class="article-card" data-category="ml">
                         <h3 class="article-title">Bearing Failure Prediction: 2.88h Accuracy</h3>
                         <div class="project-tech">
                             <span class="tech-tag">Python</span>
@@ -272,30 +311,6 @@
                     <button class="filter-btn" data-filter="field-notes" aria-pressed="false">Field Notes</button>
                 </div>
                 <div class="articles-grid" id="articlesGrid">
-                    <a href="knowledge-agent.html" class="article-card" data-category="project-deep-dives">
-                        <time class="article-date" datetime="2026-04-18">April 18, 2026</time>
-                        <h3 class="article-title">Knowledge Agent with Hybrid RAG — Project Deep Dive</h3>
-                        <p class="article-excerpt">
-                            Phase 2 upgrade of the research agent into a persistent knowledge system with hybrid retrieval (dense + BM25), cross-encoder reranking, and claim verification. This architecture moves from one-shot web lookup to reusable memory, improving routing reliability and grounded answer quality.
-                        </p>
-                        <div class="article-tags">
-                            <span class="article-tag">Project Deep Dives</span>
-                        </div>
-                    </a>
-
-                    <a href="cli-research-agent.html" class="article-card" data-category="project-deep-dives">
-                        <time class="article-date" datetime="2026-04-09">April 9, 2026</time>
-                        <h3 class="article-title">CLI Research Agent — Project Deep Dive</h3>
-                        <p class="article-excerpt">
-                            A language model that drives a multi-step research workflow autonomously. No frameworks, just direct API calls, a messages array, and a loop. Built to understand how agents actually work at the mechanical level.
-                        </p>
-                        <div class="article-tags">
-                            <span class="article-tag">Project Deep Dives</span>
-                        </div>
-                    </a>
-
-
-
                     <a href="supervised-learning-models.html" class="article-card" data-category="concept-exploration">
                         <time class="article-date" datetime="2026-03-30">March 30, 2026</time>
                         <h3 class="article-title">Supervised Learning Models — Concept Exploration</h3>
@@ -431,6 +446,7 @@
         </div>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.2.0/dist/fuse.min.js"></script>
     <script src="shared.js"></script>
 </body>
 </html>
