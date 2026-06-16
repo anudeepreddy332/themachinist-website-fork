@@ -14,17 +14,17 @@
 
     <!-- SEO block — all placeholders must be filled before output -->
     <title>B6 Validation Alpha | The Machinist</title>
-    <meta name="description" content="When collecting user input in Python, you often need to validate that a string contains only alphabetic characters. The built-in `str.">
+    <meta name="description" content="When collecting user input in Python, you often need to ensure it matches an expected format before processing.">
     <meta name="author" content="Anudeep Reddy">
 
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://themachinist.org/b6-validation-alpha.html">
     <meta property="og:title" content="B6 Validation Alpha | The Machinist">
-    <meta property="og:description" content="When collecting user input in Python, you often need to validate that a string contains only alphabetic characters. The built-in `str.">
+    <meta property="og:description" content="When collecting user input in Python, you often need to ensure it matches an expected format before processing.">
     <meta property="og:image" content="https://themachinist.org/og-default.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="B6 Validation Alpha | The Machinist">
-    <meta name="twitter:description" content="When collecting user input in Python, you often need to validate that a string contains only alphabetic characters. The built-in `str.">
+    <meta name="twitter:description" content="When collecting user input in Python, you often need to ensure it matches an expected format before processing.">
     <meta name="twitter:image" content="https://themachinist.org/og-default.png">
 
     <link rel="canonical" href="https://themachinist.org/b6-validation-alpha.html">
@@ -318,7 +318,7 @@
 
             <h1>B6 Validation Alpha</h1>
 
-            <p class="sl-subtitle">When collecting user input in Python, you often need to validate that a string contains only alphabetic characters. The built-in `str.</p>
+            <p class="sl-subtitle">When collecting user input in Python, you often need to ensure it matches an expected format before processing.</p>
 
             <div class="sl-meta">
                 <span>
@@ -340,7 +340,7 @@
             <h2>What is b6 validation alpha and why does it matter?</h2>
 
             <div class="sl-definition">
-                <p>When collecting user input in Python, you often need to validate that a string contains only alphabetic characters. The built-in `str.isalpha()` method checks if all characters in a string are Unicode letters and the string is non-empty. This is useful for fields like names, but it rejects spaces, digits, and punctuation. The problem is that real-world input often includes spaces, hyphens, or apostrophes—common in names like &quot;Jean-Pierre&quot; or &quot;O&#x27;Brien&quot;. Relying solely on `isalpha()` would reject these valid inputs. A more flexible approach is to define a custom set of allowed characters and iterate over the string, checking each character. This gives you control over what is permitted, but introduces tradeoffs in performance and complexity. Understanding when to use the built-in method versus a custom loop is essential for building robust input validation in Python applications.</p>
+                <p>When collecting user input in Python, you often need to ensure it matches an expected format before processing. A common requirement is validating that a string contains only alphabetic characters — for example, a player&#x27;s name in a sports application. Without validation, downstream code may crash or produce incorrect results when given unexpected input like numbers or special characters. Python&#x27;s built-in `isalpha()` method provides a simple way to check if all characters in a string are letters, but it has important caveats. It returns `True` for Unicode letters (e.g., accented characters) and `False` for empty strings, which may not match your application&#x27;s requirements. This article covers how to use `isalpha()` for basic string validation, when it falls short, and how to combine it with other techniques for production-grade input handling.</p>
             </div>
 
             <hr class="sl-hr">
@@ -349,54 +349,39 @@
             <h2>How it works</h2>
 
             <h3>B6 Validation Alpha</h3>
-<p>The <code>str.isalpha()</code> method is implemented in C and is fast. It returns <code>True</code> only if the string is non-empty and every character is a Unicode letter. For example, <code>"Alice".isalpha()</code> returns <code>True</code>, while <code>"Alice Smith".isalpha()</code> returns <code>False</code> because of the space. This method is ideal for quick checks where only letters are allowed.</p>
-<p>When you need to permit additional characters like spaces, hyphens, or apostrophes, you must write a custom validation loop. A common pattern is:</p>
-<pre><code>def is_valid_name(name):
-    allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ '-é")
-    if not name:
-        return False
-    for char in name:
-        if char not in allowed:
-            return False
-    return True</code></pre>
-<p>This loop gives you full control but is slower than <code>isalpha()</code> for long strings. However, for typical user input under 100 characters, the performance difference is negligible.</p>
+<p>The <code>isalpha()</code> method is a string method that returns <code>True</code> if all characters in the string are alphabetic and the string is non-empty. It uses Unicode character classification, so it considers letters from many scripts (Latin, Cyrillic, Greek, etc.) as alphabetic. For example, <code>'Alice'.isalpha()</code> returns <code>True</code>, <code>'Alice123'.isalpha()</code> returns <code>False</code>, and <code>'José'.isalpha()</code> returns <code>True</code> because 'é' is a Unicode letter. However, <code>''.isalpha()</code> returns <code>False</code> because the string is empty.</p>
+<p>A common failure mode is forgetting that <code>isalpha()</code> treats spaces as non-alphabetic. A full name like <code>'Mary Jane'</code> will fail validation because the space character is not a letter. To handle this, you must either strip spaces before validation or use a custom approach. Another failure mode is performance: for very long strings, <code>isalpha()</code> is O(n) in the length of the string, which is fine for typical input but could be slow when processing millions of records. In such cases, a compiled regular expression is faster.</p>
+<p>For production systems, you typically combine validation with clear error messages. If a user enters <code>'John123'</code>, reject it and tell them only letters are allowed. If you need to restrict input to ASCII letters only (A-Z, a-z), you must use a different approach. One common pattern is to use a regular expression: <code>import re; bool(re.match(r'^[A-Za-z]+$', name))</code>. A more flexible approach is to define a custom set of allowed characters. For example, if you need to permit hyphens, apostrophes, or spaces in names, define a set like <code>allowed_chars = set(string.ascii_letters + " '-.")</code> and check <code>all(c in allowed_chars for c in name)</code>. This approach is explicit and avoids surprises with Unicode.</p>
 <div class="callout callout-info">
-<strong>Key failure mode:</strong> Unicode normalization. The character 'é' can be represented as a single codepoint (U+00E9) or as 'e' plus a combining accent (U+0065 U+0301). <code>isalpha()</code> returns <code>True</code> for both forms, but a custom set that only includes the single codepoint will reject the decomposed form. To handle this, normalize the string with <code>unicodedata.normalize('NFC', input)</code> before validation. This converts decomposed characters to their composed form, ensuring consistent behavior.
+<strong>Real-world caveat:</strong> <code>isalpha()</code> treats numeric superscripts like '²' as non-alphabetic, but some Unicode modifiers may behave unexpectedly. Always test with the specific character ranges your application expects. For example, if your application only accepts English names, the regex approach is safer. If you use a custom allowed set, document which characters are permitted to avoid confusion. Empty strings return <code>False</code> for <code>isalpha()</code> — handle this explicitly if empty input is valid.
 </div>
-<p>Another caveat is that <code>isalpha()</code> behavior can vary with locale settings. In some locales, characters like 'ß' are considered alpha, but in others they might not be. Explicit character sets avoid this ambiguity but require maintenance if new valid characters are needed.</p>
-<p><strong>Always check for empty strings before iterating over characters.</strong> A custom loop that does not check length first might return <code>True</code> for an empty string if the loop body never executes, leading to false positives.</p>
            
             <hr class="sl-hr">
 
             <!-- ── Section 3: Code ── -->
             <h2>In practice</h2>
 
-            <div class="sl-code-block"><div class="sl-code-label">PYTHON</div><pre><code class="language-python">import unicodedata
+            <div class="sl-code-block"><div class="sl-code-label">PYTHON</div><pre><code class="language-python">import re
 
-def validate_name(name):
-    &quot;&quot;&quot;Validate a name allowing letters, spaces, hyphens, and apostrophes.&quot;&quot;&quot;
-    allowed = set(&quot;abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ &#x27;-é&quot;)
-    if not name:
-        return False
-    normalized = unicodedata.normalize(&#x27;NFC&#x27;, name)
-    for char in normalized:
-        if char not in allowed:
-            return False
-    return True
+# Basic isalpha() validation
+def validate_name_basic(name: str) -&gt; bool:
+    return bool(name) and name.isalpha()
+
+# Strict ASCII-only validation using regex
+def validate_name_ascii(name: str) -&gt; bool:
+    return bool(re.match(r&#x27;^[A-Za-z]+$&#x27;, name))
+
+# Custom allowed character set (e.g., for names with hyphens or apostrophes)
+def validate_name_custom(name: str) -&gt; bool:
+    allowed_chars = set(&quot;abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ &#x27;-.&quot;)
+    return bool(name) and all(c in allowed_chars for c in name)
 
 # Example usage
-print(validate_name(&quot;Jean-Pierre&quot;))  # True
-print(validate_name(&quot;O&#x27;Brien&quot;))      # True
-print(validate_name(&quot;Alice Smith&quot;))  # True
-print(validate_name(&quot;&quot;))             # False
-print(validate_name(&quot;123&quot;))          # False</code></pre></div>
-
-<div class="sl-code-block"><div class="sl-code-label">PYTHON</div><pre><code class="language-python"># Using isalpha() for a quick check
-name = input(&quot;Enter your name: &quot;)
-if name.isalpha():
-    print(&quot;Valid name&quot;)
-else:
-    print(&quot;Invalid name - only letters allowed&quot;)</code></pre></div>
+print(validate_name_basic(&quot;Alice&quot;))       # True
+print(validate_name_basic(&quot;Alice123&quot;))    # False
+print(validate_name_basic(&quot;&quot;))            # False
+print(validate_name_ascii(&quot;José&quot;))        # False (é is not ASCII)
+print(validate_name_custom(&quot;Mary Jane&quot;))  # True</code></pre></div>
 
             <hr class="sl-hr">
 
@@ -406,11 +391,11 @@ else:
             <div class="callout callout-key">
                 <div class="callout-label">What you now know</div>
                 <ul>
-<li>Use `str.isalpha()` for fast validation when only Unicode letters are allowed; it rejects spaces, digits, and punctuation.</li>
-<li>For input that permits spaces, hyphens, or apostrophes, define a custom set of allowed characters and iterate over the string.</li>
-<li>Normalize Unicode strings with `unicodedata.normalize(&#x27;NFC&#x27;, ...)` before custom validation to avoid rejecting valid accented characters.</li>
-<li>Always check for empty strings before iterating over characters to avoid false positives.</li>
-<li>Character-by-character loops are slower than built-in methods but give you full control over validation rules.</li>
+<li>Use `isalpha()` for quick Unicode-aware alphabetic checks, but remember it returns False for empty strings and spaces.</li>
+<li>For strict ASCII-only validation, use a regex like `re.match(r&#x27;^[A-Za-z]+$&#x27;, name)` to avoid accepting accented characters.</li>
+<li>Define a custom set of allowed characters when you need to permit hyphens, apostrophes, or spaces in names.</li>
+<li>Always combine validation with clear error messages to guide users toward valid input.</li>
+<li>Test with edge cases like empty strings, Unicode letters, and special characters to avoid surprises in production.</li>
 </ul>
 
             </div>
@@ -419,9 +404,7 @@ else:
             <div class="sl-sources">
                 <div class="sl-sources-label">Sources</div>
                 <ol>
-                    <li><a href="https://www.youtube.com/watch?v=Rg0c7wS7vSI" target="_blank" rel="noopener noreferrer">Python Input Validation Explained in 20 Minutes</a></li>
-                    <li><a href="https://pubmed.ncbi.nlm.nih.gov/6793529" target="_blank" rel="noopener noreferrer">[Evaluation of methods to determine the vitamin B6 status of humans. 1. alpha-EGOT: methods and validation] - PubMed</a></li>
-                    <li><a href="https://www.mdpi.com/2304-8158/14/3/457" target="_blank" rel="noopener noreferrer">Validation of the Vitamin B6 Profile (Pyridoxine, Pyridoxal, and ...</a></li>
+                    <li><a href="https://www.youtube.com/watch?v=Rg0c7wS7vSI" target="_blank" rel="noopener noreferrer">youtube.com</a></li>
 
                 </ol>
             </div>
