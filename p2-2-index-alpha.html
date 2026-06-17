@@ -14,17 +14,17 @@
 
     <!-- SEO block — all placeholders must be filled before output -->
     <title>P2.2 Index Alpha | The Machinist</title>
-    <meta name="description" content="When evaluating an investment portfolio, raw return tells you nothing about skill. A fund could be up 20% simply because the whole market rose 25%.">
+    <meta name="description" content="When evaluating an investment portfolio or trading strategy, raw returns are not enough.">
     <meta name="author" content="Anudeep Reddy">
 
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://themachinist.org/p2-2-index-alpha.html">
     <meta property="og:title" content="P2.2 Index Alpha | The Machinist">
-    <meta property="og:description" content="When evaluating an investment portfolio, raw return tells you nothing about skill. A fund could be up 20% simply because the whole market rose 25%.">
+    <meta property="og:description" content="When evaluating an investment portfolio or trading strategy, raw returns are not enough.">
     <meta property="og:image" content="https://themachinist.org/og-default.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="P2.2 Index Alpha | The Machinist">
-    <meta name="twitter:description" content="When evaluating an investment portfolio, raw return tells you nothing about skill. A fund could be up 20% simply because the whole market rose 25%.">
+    <meta name="twitter:description" content="When evaluating an investment portfolio or trading strategy, raw returns are not enough.">
     <meta name="twitter:image" content="https://themachinist.org/og-default.png">
 
     <link rel="canonical" href="https://themachinist.org/p2-2-index-alpha.html">
@@ -318,7 +318,7 @@
 
             <h1>P2.2 Index Alpha</h1>
 
-            <p class="sl-subtitle">When evaluating an investment portfolio, raw return tells you nothing about skill. A fund could be up 20% simply because the whole market rose 25%.</p>
+            <p class="sl-subtitle">When evaluating an investment portfolio or trading strategy, raw returns are not enough.</p>
 
             <div class="sl-meta">
                 <span>
@@ -340,7 +340,7 @@
             <h2>What is p2.2 index alpha and why does it matter?</h2>
 
             <div class="sl-definition">
-                <p>When evaluating an investment portfolio, raw return tells you nothing about skill. A fund could be up 20% simply because the whole market rose 25%. The problem is separating manager skill from market tailwinds. Alpha solves this by measuring active return — the difference between a portfolio&#x27;s actual performance and the performance of a benchmark index. It answers the question: did the manager add value beyond what a passive index would have delivered? Alpha is one of five key risk ratios in modern portfolio theory, alongside beta, standard deviation, R-squared, and the Sharpe ratio. Portfolio managers aim for positive alpha through diversified strategies that reduce unsystematic risk. But alpha is not a pure measure of skill — it depends heavily on the choice of benchmark and the time period. A positive alpha may simply reflect exposure to risk factors not captured by the model. Understanding alpha helps engineers building automated trading or portfolio optimization systems evaluate whether a strategy truly outperforms or just rides a bull market.</p>
+                <p>When evaluating an investment portfolio or trading strategy, raw returns are not enough. A strategy that returned 15% last year might look impressive, but if the market returned 20%, the manager actually underperformed. Alpha measures the excess return of a portfolio relative to a benchmark, adjusted for risk. It isolates the value added (or subtracted) by active management decisions, beyond what simple market exposure would explain. Without alpha, you cannot distinguish skill from luck or a rising tide. For engineers building algorithmic trading systems, alpha is the core metric for strategy evaluation and optimization. It answers the question: does this strategy actually generate predictive value, or is it just riding market beta?</p>
             </div>
 
             <hr class="sl-hr">
@@ -349,14 +349,13 @@
             <h2>How it works</h2>
 
             <h3>P2.2 Index Alpha</h3>
-<p>Alpha is typically calculated as the difference between a portfolio's actual return and its expected return given its risk level. The expected return is often derived from a model like the Capital Asset Pricing Model (CAPM), which expresses expected return as the risk-free rate plus beta times the market risk premium. In plain text: <code>expected_return = risk_free_rate + beta * (market_return - risk_free_rate)</code>. Alpha is then: <code>alpha = actual_return - expected_return</code>. A positive alpha means the portfolio outperformed the risk-adjusted expectation; a negative alpha means underperformance. Alpha is commonly expressed as a single number like +3.0 or -5.0, representing a percentage (3% better or 5% worse than the benchmark).</p>
-<p>In practice, alpha is only as good as the benchmark. If you compare a tech-heavy portfolio to the S&P 500, the alpha may be misleading because the portfolio's sector exposure is different. A mismatched benchmark can produce a false positive or negative alpha. This is a key failure mode: alpha does not control for all risk factors. CAPM assumes beta captures all relevant risk, but in reality other factors like size, value, and momentum affect returns. Alpha that appears positive may simply reflect exposure to these other risk factors not captured by beta.</p>
-<p>Another caveat: alpha is backward-looking. It measures past performance, not future skill. Alpha calculated over a few months can be dominated by random noise. Longer periods give a more reliable signal, but there is no guarantee past alpha persists. Survivorship bias also distorts observed alpha — funds that fail are dropped from databases, making average alpha look higher than it really is.</p>
-<p>Portfolio managers seek alpha through diversified strategies that eliminate unsystematic risk. But achieving consistent alpha is challenging. A manager can generate alpha by taking concentrated bets, but this increases unsystematic risk. Diversification reduces unsystematic risk but may also reduce the chance of large alpha. The tradeoff is between risk and the potential for outperformance.</p>
-<p>For engineers implementing alpha calculations, the key steps are: choose a benchmark, compute expected return using a risk model, subtract from actual return, and interpret with caution. Always check for benchmark mismatch, time period sensitivity, and factor exposure.</p>
+<p>Alpha is calculated as the difference between a portfolio's actual return and its expected return based on a benchmark. The simplest form is: <code>alpha = portfolio return - benchmark return</code>. But this ignores risk. A more common approach adjusts for systematic risk using beta, which measures the portfolio's sensitivity to the benchmark. The formula becomes: <code>alpha = portfolio return - (risk-free rate + beta * (benchmark return - risk-free rate))</code>. This is Jensen's alpha.</p>
+<p>In practice, alpha is often estimated by regressing the portfolio's excess returns (return minus risk-free rate) against the benchmark's excess returns. The intercept of that regression is the alpha. A positive intercept means the portfolio outperformed the benchmark on a risk-adjusted basis. A negative intercept means it underperformed.</p>
 <div class="callout callout-info">
-<strong>Important:</strong> Alpha is only as reliable as the benchmark and risk model used. Mismatched benchmarks, short time periods, and unaccounted risk factors can produce misleading results.
+<strong>Key failure mode:</strong> alpha estimates are only as good as the benchmark and the risk model. If the benchmark does not match the portfolio's investment universe (e.g., a small-cap fund compared to the S&P 500), the alpha will be misleading. The regression also assumes a stable beta over the estimation period. If a strategy's beta changes (e.g., a market-neutral fund that occasionally takes directional bets), the alpha estimate becomes unreliable.
 </div>
+<p>Another caveat: alpha from a linear regression only adjusts for linear market exposure. Strategies with non-linear payoffs (e.g., options, tail-risk strategies) can show positive alpha during calm periods and catastrophic losses during crises. This is sometimes called <strong>'picking up pennies in front of a steamroller.'</strong></p>
+<p>For algorithmic strategies, alpha often decays as other traders exploit the same pattern. The search for alpha is competitive and, before costs, a zero-sum game. Short estimation windows produce noisy alpha estimates; long windows may reflect a single lucky trade. Always check for tail risk and regime changes when interpreting alpha from linear models.</p>
            
             <hr class="sl-hr">
 
@@ -365,37 +364,41 @@
 
             <div class="sl-code-block"><div class="sl-code-label">PYTHON</div><pre><code class="language-python">import numpy as np
 import pandas as pd
+import statsmodels.api as sm
 
-# Example: compute alpha for a portfolio vs S&amp;P 500
+# Example: calculate alpha for a portfolio vs S&amp;P 500
 # Assume we have daily returns for portfolio and benchmark
-# risk_free_rate approximated as 0 for simplicity
+np.random.seed(42)
+dates = pd.date_range(&#x27;2023-01-01&#x27;, periods=252, freq=&#x27;D&#x27;)
+benchmark_returns = np.random.normal(0.0005, 0.01, 252)  # daily returns
+portfolio_returns = 0.0002 + 1.2 * benchmark_returns + np.random.normal(0, 0.005, 252)
 
-def compute_alpha(portfolio_returns, benchmark_returns, risk_free_rate=0.0):
-    &quot;&quot;&quot;
-    Compute alpha using CAPM.
-    portfolio_returns, benchmark_returns: pandas Series of daily returns
-    Returns alpha (annualized)
-    &quot;&quot;&quot;
-    # Compute beta
-    covariance = np.cov(portfolio_returns, benchmark_returns)[0, 1]
-    variance = np.var(benchmark_returns)
-    beta = covariance / variance
-    
-    # Expected return based on CAPM
-    expected_return = risk_free_rate + beta * (benchmark_returns.mean() - risk_free_rate)
-    
-    # Alpha
-    alpha_daily = portfolio_returns.mean() - expected_return
-    
-    # Annualize (assuming 252 trading days)
-    alpha_annual = alpha_daily * 252
-    return alpha_annual
+# Risk-free rate (approximate daily)
+rf = 0.0001
 
-# Example usage
-portfolio_returns = pd.Series([0.001, 0.002, -0.001, 0.003])
-benchmark_returns = pd.Series([0.0005, 0.001, -0.0005, 0.002])
-alpha = compute_alpha(portfolio_returns, benchmark_returns)
-print(f&quot;Annualized Alpha: {alpha:.4f}&quot;)</code></pre></div>
+# Excess returns
+excess_portfolio = portfolio_returns - rf
+excess_benchmark = benchmark_returns - rf
+
+# Regression to get alpha (intercept) and beta (slope)
+X = sm.add_constant(excess_benchmark)
+model = sm.OLS(excess_portfolio, X).fit()
+alpha = model.params[0]
+beta = model.params[1]
+
+print(f&quot;Alpha (daily): {alpha:.6f}&quot;)
+print(f&quot;Beta: {beta:.4f}&quot;)
+print(f&quot;Annualized alpha: {alpha * 252:.4f}&quot;)</code></pre></div>
+
+<div class="sl-code-block"><div class="sl-code-label">PYTHON</div><pre><code class="language-python"># Manual calculation for a single period
+portfolio_return = 0.12  # 12%
+benchmark_return = 0.10  # 10%
+risk_free_rate = 0.02    # 2%
+beta = 1.2
+
+expected_return = risk_free_rate + beta * (benchmark_return - risk_free_rate)
+alpha = portfolio_return - expected_return
+print(f&quot;Alpha: {alpha:.4f} or {alpha*100:.2f}%&quot;)</code></pre></div>
 
             <hr class="sl-hr">
 
@@ -405,11 +408,11 @@ print(f&quot;Annualized Alpha: {alpha:.4f}&quot;)</code></pre></div>
             <div class="callout callout-key">
                 <div class="callout-label">What you now know</div>
                 <ul>
-<li>Alpha measures active return: the difference between a portfolio&#x27;s actual return and its expected return given its risk (often via CAPM).</li>
-<li>Alpha is only as reliable as the benchmark — a mismatched benchmark can produce misleading positive or negative alpha.</li>
-<li>Alpha is backward-looking and can be noisy over short periods; longer time frames (3-5 years) give a more reliable signal.</li>
-<li>Survivorship bias and exposure to other risk factors (size, value, momentum) can distort alpha, so interpret with caution.</li>
-<li>Portfolio managers seek positive alpha through diversified strategies, but achieving consistent alpha is challenging and involves tradeoffs between risk and potential outperformance.</li>
+<li>Alpha measures the excess return of a portfolio relative to a benchmark, adjusted for risk via beta.</li>
+<li>The standard calculation uses regression: alpha is the intercept of a regression of portfolio excess returns on benchmark excess returns.</li>
+<li>Alpha estimates are unreliable if the benchmark does not match the portfolio&#x27;s risk profile or if beta is not stable.</li>
+<li>Linear alpha models can mislead for strategies with non-linear risks — always check for tail risk and regime changes.</li>
+<li>For algorithmic strategies, alpha often decays as the pattern is exploited by others; it is a competitive, zero-sum game before costs.</li>
 </ul>
 
             </div>
