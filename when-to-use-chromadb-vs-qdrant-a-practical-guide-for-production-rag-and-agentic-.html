@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- MUST BE FIRST: Anti-flicker theme script -->
+    <script>
+        (function() {
+            const t = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO block — all placeholders must be filled before output -->
+    <title>When to Use ChromaDB vs Qdrant: A Practical Guide for Production RAG and Agentic AI Systems | The Machinist</title>
+    <meta name="description" content="Choosing a vector database for a RAG or agentic AI system often feels like picking between two similar tools.">
+    <meta name="author" content="Anudeep Reddy">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://themachinist.org/when-to-use-chromadb-vs-qdrant-a-practical-guide-for-production-rag-and-agentic-.html">
+    <meta property="og:title" content="When to Use ChromaDB vs Qdrant: A Practical Guide for Production RAG and Agentic AI Systems | The Machinist">
+    <meta property="og:description" content="Choosing a vector database for a RAG or agentic AI system often feels like picking between two similar tools.">
+    <meta property="og:image" content="https://themachinist.org/og-default.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="When to Use ChromaDB vs Qdrant: A Practical Guide for Production RAG and Agentic AI Systems | The Machinist">
+    <meta name="twitter:description" content="Choosing a vector database for a RAG or agentic AI system often feels like picking between two similar tools.">
+    <meta name="twitter:image" content="https://themachinist.org/og-default.png">
+
+    <link rel="canonical" href="https://themachinist.org/when-to-use-chromadb-vs-qdrant-a-practical-guide-for-production-rag-and-agentic-.html">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Shared styles -->
+    <link rel="stylesheet" href="./shared.css">
+
+    <!-- Page-specific styles — do not duplicate anything from shared.css -->
+    <style>
+        html { scroll-behavior: smooth; }
+
+        /* Orange accent tokens — matches supervised-learning-models.html exactly */
+        :root {
+            --orange: #f97316;
+            --orange-subtle: rgba(249,115,22,0.08);
+            --orange-border: rgba(249,115,22,0.25);
+            --muted: #6b7280;
+            --border: #e5e7eb;
+            --card: #f9fafb;
+        }
+        [data-theme="dark"] {
+            --orange-subtle: rgba(249,115,22,0.1);
+            --orange-border: rgba(249,115,22,0.3);
+            --muted: #9ca3af;
+            --border: #27272a;
+            --card: #18181b;
+        }
+
+        /* ── Page header ── */
+        .sl-header {
+            text-align: left;
+            padding: calc(var(--spacing-xl) + 60px) var(--spacing-md) var(--spacing-lg);
+            background: var(--section-bg);
+            border-bottom: 1px solid var(--border);
+        }
+        .sl-header .container { max-width: 720px; margin: 0 auto; }
+
+        /* ── Breadcrumb ── */
+        .sl-breadcrumb {
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+            font-size: 0.78rem; color: var(--muted); margin-bottom: 20px;
+        }
+        .sl-breadcrumb a { color: var(--muted); text-decoration: none; }
+        .sl-breadcrumb a:hover { color: var(--text-color, #111); }
+        .sl-breadcrumb-sep { opacity: 0.4; }
+
+        /* ── Series label above h1 ── */
+        .sl-series-label {
+            font-size: 0.72rem; font-weight: 700;
+            letter-spacing: 0.12em; text-transform: uppercase;
+            color: var(--muted); margin-bottom: 12px;
+        }
+
+        /* ── Page title — Tier 2 (Learning Log) ── */
+        .sl-header h1 {
+            font-size: clamp(1.6rem, 4vw, 2.4rem);
+            font-weight: 800; letter-spacing: -0.025em;
+            line-height: 1.2; margin-bottom: 14px;
+        }
+
+        /* ── Subtitle ── */
+        .sl-subtitle {
+            font-size: 0.98rem; color: var(--text-secondary);
+            line-height: 1.75; max-width: 560px; margin: 0 0 24px;
+        }
+
+        /* ── Meta row (read time + difficulty badge) ── */
+        .sl-meta {
+            display: flex; gap: 18px; flex-wrap: wrap;
+            align-items: center; padding-top: 18px;
+            border-top: 1px solid var(--border);
+            font-size: 0.78rem; color: var(--muted);
+        }
+        .sl-meta span { display: flex; align-items: center; gap: 5px; }
+        .meta-badge {
+            font-size: 0.68rem; font-weight: 700;
+            letter-spacing: 0.08em; text-transform: uppercase;
+            padding: 3px 8px; border-radius: 3px;
+            background: var(--orange-subtle);
+            border: 1px solid var(--orange-border);
+            color: var(--orange);
+        }
+
+        /* ── Article body ── */
+        .sl-body {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 52px 24px 80px;
+        }
+        .sl-body p {
+            font-size: 0.96rem; line-height: 1.82;
+            color: var(--text-color, #374151); margin-bottom: 18px;
+        }
+        .sl-body h2 {
+            font-size: 1.2rem; font-weight: 700;
+            margin: 44px 0 14px; letter-spacing: -0.01em;
+            color: var(--text-color, #111);
+        }
+        .sl-body h3 {
+            font-size: 1rem; font-weight: 700;
+            margin: 28px 0 10px; color: var(--text-color, #111);
+        }
+        .sl-body strong { color: var(--text-color, #111); }
+        .sl-body ul, .sl-body ol { padding-left: 20px; margin-bottom: 18px; }
+        .sl-body li {
+            font-size: 0.96rem; line-height: 1.78;
+            color: var(--text-color, #374151); margin-bottom: 5px;
+        }
+
+        /* ── Definition box (used for Problem Framing) ── */
+        .sl-definition {
+            border-left: 3px solid var(--text-color, #111);
+            background: var(--section-bg);
+            border-radius: 0 6px 6px 0;
+            padding: 18px 22px; margin: 22px 0 32px;
+        }
+        .sl-definition p { margin: 0; font-size: 0.95rem; line-height: 1.78; }
+
+        /* ── Callout boxes ── */
+        .callout {
+            border-radius: 6px; padding: 16px 20px;
+            margin: 22px 0; border: 1px solid;
+        }
+        .callout-label {
+            font-size: 0.68rem; font-weight: 800;
+            letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;
+        }
+        .callout p { margin: 0; font-size: 0.875rem; line-height: 1.72; color: var(--text-color, #374151); }
+
+        /* Orange key-takeaway callout — used for Takeaways section */
+        .callout-key {
+            background: var(--orange-subtle);
+            border-color: var(--orange-border);
+            border-left: 3px solid var(--orange);
+        }
+        .callout-key .callout-label { color: var(--orange); }
+
+        /* Purple info callout — available for use in technical dive */
+        .callout-info {
+            background: rgba(139,92,246,0.06);
+            border-color: rgba(139,92,246,0.2);
+            border-left: 3px solid #8b5cf6;
+        }
+        .callout-info .callout-label { color: #8b5cf6; }
+
+        /* ── Code blocks — dark terminal style ── */
+        .sl-code-block {
+            background: #1a1a1a;
+            border-radius: 7px;
+            margin: 22px 0 28px;
+            overflow: hidden;
+        }
+        .sl-code-label {
+            background: #111;
+            padding: 7px 16px;
+            font-size: 0.68rem; font-weight: 700;
+            letter-spacing: 0.1em; text-transform: uppercase;
+            color: #6b7280;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        .sl-code-block pre {
+            margin: 0; padding: 18px 20px;
+            overflow-x: auto; white-space: pre;
+        }
+        .sl-code-block code {
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.82rem; line-height: 1.7;
+            color: #d4d4d4;
+        }
+
+        /* ── Inline code ── */
+        .sl-body code:not(.sl-code-block code) {
+            background: var(--section-bg);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 1px 5px;
+            font-size: 0.85em;
+            color: var(--text-color);
+            font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+
+        /* ── Horizontal rule ── */
+        .sl-hr {
+            border: none; border-top: 1px solid var(--border); margin: 38px 0;
+        }
+
+        /* ── Sources section ── */
+        .sl-sources {
+            border-top: 1px solid var(--border);
+            margin-top: 52px; padding-top: 28px;
+        }
+        .sl-sources-label {
+            font-size: 0.72rem; font-weight: 700;
+            letter-spacing: 0.12em; text-transform: uppercase;
+            color: var(--muted); margin-bottom: 14px;
+        }
+        .sl-sources ol {
+            padding-left: 20px; margin: 0;
+        }
+        .sl-sources li {
+            font-size: 0.82rem; color: var(--muted);
+            line-height: 1.65; margin-bottom: 7px;
+        }
+        .sl-sources a {
+            color: var(--muted); text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        .sl-sources a:hover { color: var(--text-color, #111); }
+
+        /* ── Mobile ── */
+        @media (max-width: 640px) {
+            .sl-body { padding: 36px 16px 60px; }
+            .sl-header { padding: calc(var(--spacing-xl, 64px) + 60px) 16px 36px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Skip link (accessibility) -->
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <!-- Nav — verbatim from supervised-learning-models.html. Do not alter. -->
+    <nav id="nav" role="navigation" aria-label="Main navigation">
+        <div class="container">
+            <div class="nav-container">
+                <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false">
+                    <span></span><span></span><span></span>
+                </button>
+                <ul>
+                    <li><a href="index.html#projects">Projects</a></li>
+                    <li><a href="index.html#about">About</a></li>
+                    <li><a href="index.html#skills">Skills</a></li>
+                    <li><a href="index.html#learning-log">Learning Log</a></li>
+                    <li><a href="index.html#contact">Contact</a></li>
+                </ul>
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                    <div class="toggle-slider">
+                        <svg class="toggle-icon sun-icon" viewBox="0 0 24 24" style="display:block;">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2"/>
+                            <line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" stroke-width="2"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" stroke-width="2"/>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" stroke-width="2"/>
+                            <line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" stroke-width="2"/>
+                            <line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2"/>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" stroke-width="2"/>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <svg class="toggle-icon moon-icon" viewBox="0 0 24 24" style="display:none;">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </div>
+                </button>
+            </div>
+        </div>
+        <div class="mobile-menu">
+            <div class="mobile-menu-header">
+                <button class="close-menu" aria-label="Close menu">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <a href="index.html#projects">Projects</a>
+            <a href="index.html#about">About</a>
+            <a href="index.html#skills">Skills</a>
+            <a href="index.html#learning-log">Learning Log</a>
+            <a href="index.html#contact">Contact</a>
+        </div>
+    </nav>
+
+    <!-- Page header — inject TOPIC, SERIES_LABEL, SERIES_CONTEXT, META_DESCRIPTION, DIFFICULTY -->
+    <header class="sl-header">
+        <div class="container">
+            <!-- Breadcrumb: Learning Log / Learning Log / When to Use ChromaDB vs Qdrant: A Practical Guide for Production RAG and Agentic AI Systems -->
+            <nav class="sl-breadcrumb" aria-label="Breadcrumb">
+                <a href="index.html#learning-log">Learning Log</a>
+                <span class="sl-breadcrumb-sep">/</span>
+                <span>Learning Log</span>
+                <span class="sl-breadcrumb-sep">/</span>
+                <span style="color: var(--text-color, #111); font-weight: 500;">When to Use ChromaDB vs Qdrant: A Practical Guide for Production RAG and Agentic AI Systems</span>
+            </nav>
+
+            <!-- Series label above title -->
+            <div class="sl-series-label">Learning Log</div>
+
+            <h1>When to Use ChromaDB vs Qdrant: A Practical Guide for Production RAG and Agentic AI Systems</h1>
+
+            <p class="sl-subtitle">Choosing a vector database for a RAG or agentic AI system often feels like picking between two similar tools.</p>
+
+            <div class="sl-meta">
+                <span>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    5 min read
+                </span>
+                <span class="meta-badge">Intermediate</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main id="main">
+        <div class="sl-body">
+
+            <!-- ── Section 1: Problem Framing ── -->
+            <h2>What is when to use chromadb vs qdrant: a practical guide for production rag and agentic ai systems and why does it matter?</h2>
+
+            <div class="sl-definition">
+                <p>Choosing a vector database for a RAG or agentic AI system often feels like picking between two similar tools. But ChromaDB and Qdrant serve fundamentally different stages of a project&#x27;s lifecycle. ChromaDB is an embedded, in-process database that prioritizes zero-configuration setup. It runs inside your Python process, storing vectors in memory or on disk with a simple API. Qdrant is a client-server vector database that runs as a separate service, exposing REST and gRPC APIs. It supports advanced filtering, disk-backed storage, and horizontal scaling. The wrong choice early on can lead to painful rewrites. If you pick Chroma for a prototype and then need to scale to millions of vectors with multi-user access, you will have to migrate your entire data pipeline. If you pick Qdrant for a notebook experiment, you waste time on Docker setup and server management. This guide gives you a decision framework based on your current stage: experimentation, production, or something in between.</p>
+            </div>
+
+            <hr class="sl-hr">
+
+            <!-- ── Section 2: Technical Deep-Dive ── -->
+            <h2>How it works</h2>
+
+            <h3>Core Architectural Difference: Embedded vs. Client-Server</h3>
+<p>The core architectural difference is embedded vs. client-server. ChromaDB runs in your application process. When you call <code>Chroma.from_documents(documents, embedding)</code> without a <code>persist_directory</code>, data lives in RAM and is lost when the Python process stops. With a <code>persist_directory</code>, it writes to disk using SQLite under the hood. This makes Chroma ideal for notebooks, local experiments, and single-user applications. There is no network overhead, no server to manage, and no Docker required. The tradeoff is that Chroma does not handle concurrent writes from multiple processes well, and its metadata filtering is basic compared to Qdrant.</p>
+<p>Qdrant runs as a separate server process. You interact with it via REST or gRPC. This adds latency per request but enables production features: horizontal scaling by adding nodes, persistent disk storage with memory-mapped indexes, and strong metadata filtering using a full boolean expression language. Qdrant supports multi-vector documents (e.g., one vector per page of a PDF) and payload indexing for fast filtered searches. In production, you typically run Qdrant in Docker with a volume mount for data persistence, and you monitor it with Prometheus and OpenTelemetry.</p>
+<h3>Common Failure Modes</h3>
+<p>A common failure mode is assuming Chroma's in-memory mode will scale. If your dataset grows beyond RAM (e.g., millions of 768-dimensional vectors), Chroma will either crash or swap to disk with severe performance degradation. Another failure mode is ignoring observability. Chroma provides minimal built-in metrics. Qdrant exposes metrics via Prometheus, making it possible to track query latency, index size, and memory usage in production. Teams that skip observability until something breaks often discover too late that their vector search is the bottleneck.</p>
+<div class="callout callout-info">
+<strong>Important:</strong> If you start with Chroma and later need to migrate to Qdrant, you will need to re-embed all your documents and rewrite your query logic to use the Qdrant client API.
+</div>
+<h3>Decision Framework</h3>
+<p>The decision framework is straightforward. Choose Chroma if:</p>
+<ul>
+<li>Absolute simplicity matters most</li>
+<li>You are building notebooks or experiments</li>
+<li>Prototypes need to be shareable without Docker</li>
+<li>Embedded applications are your target</li>
+<li>You want to defer production decisions</li>
+</ul>
+<p>Choose Qdrant if:</p>
+<ul>
+<li>Production parity matters for your workflow</li>
+<li>Your team standardizes on Docker</li>
+<li>Advanced filtering is needed during development</li>
+<li>You want the same code in development and production</li>
+<li>Multi-vector documents are part of your design</li>
+</ul>
+           
+            <hr class="sl-hr">
+
+            <!-- ── Section 3: Code ── -->
+            <h2>In practice</h2>
+
+            <div class="sl-code-block"><div class="sl-code-label">PYTHON</div><pre><code class="language-python"># ChromaDB: embedded, no server needed
+import chromadb
+from chromadb.utils import embedding_functions
+
+client = chromadb.Client()  # in-memory, data lost on exit
+# client = chromadb.PersistentClient(path=&quot;./chroma_db&quot;)  # persists to disk
+
+collection = client.create_collection(
+    name=&quot;docs&quot;,
+    embedding_function=embedding_functions.DefaultEmbeddingFunction()
+)
+
+collection.add(
+    documents=[&quot;The sky is blue.&quot;, &quot;Grass is green.&quot;],
+    ids=[&quot;doc1&quot;, &quot;doc2&quot;],
+    metadatas=[{&quot;source&quot;: &quot;weather&quot;}, {&quot;source&quot;: &quot;nature&quot;}]
+)
+
+results = collection.query(
+    query_texts=[&quot;What color is the sky?&quot;],
+    n_results=1,
+    where={&quot;source&quot;: &quot;weather&quot;}
+)
+print(results[&quot;documents&quot;][0][0])  # &quot;The sky is blue.&quot;</code></pre></div>
+
+<div class="sl-code-block"><div class="sl-code-label">PYTHON</div><pre><code class="language-python"># Qdrant: client-server, requires running server
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams, PointStruct
+
+client = QdrantClient(host=&quot;localhost&quot;, port=6333)  # assumes server is running
+
+client.recreate_collection(
+    collection_name=&quot;docs&quot;,
+    vectors_config=VectorParams(size=768, distance=Distance.COSINE),
+)
+
+# In production, you&#x27;d use a real embedding model
+import numpy as np
+fake_vector = np.random.rand(768).tolist()
+
+client.upsert(
+    collection_name=&quot;docs&quot;,
+    points=[
+        PointStruct(
+            id=1,
+            vector=fake_vector,
+            payload={&quot;text&quot;: &quot;The sky is blue.&quot;, &quot;source&quot;: &quot;weather&quot;}
+        )
+    ]
+)
+
+results = client.search(
+    collection_name=&quot;docs&quot;,
+    query_vector=fake_vector,
+    limit=1,
+    query_filter={&quot;must&quot;: [{&quot;key&quot;: &quot;source&quot;, &quot;match&quot;: {&quot;value&quot;: &quot;weather&quot;}}]}
+)
+print(results[0].payload[&quot;text&quot;])  # &quot;The sky is blue.&quot;</code></pre></div>
+
+            <hr class="sl-hr">
+
+            <!-- ── Section 4: Takeaways ── -->
+            <h2>Key takeaways</h2>
+
+            <div class="callout callout-key">
+                <div class="callout-label">What you now know</div>
+                <ul>
+<li>Use ChromaDB for local experiments, notebooks, and prototypes where zero-configuration setup is critical.</li>
+<li>Use Qdrant for production systems that need horizontal scaling, advanced metadata filtering, and observability.</li>
+<li>ChromaDB stores data in-memory by default; use PersistentClient for disk persistence, but expect limited concurrency.</li>
+<li>Qdrant runs as a separate server (typically Docker) and exposes REST/gRPC APIs; it supports multi-vector documents and Prometheus metrics.</li>
+<li>Migrating from Chroma to Qdrant requires re-embedding all documents and rewriting query logic — choose early based on your production needs.</li>
+</ul>
+
+            </div>
+
+            <!-- ── Sources ── -->
+            <div class="sl-sources">
+                <div class="sl-sources-label">Sources</div>
+                <ol>
+                    <li><a href="https://zenvanriel.com/ai-engineer-blog/chroma-vs-qdrant-local-development" target="_blank" rel="noopener noreferrer">zenvanriel.com</a></li>
+                    <li><a href="https://medium.com/@saha.soumyadeep90/designing-scalable-rag-systems-using-vectordb-a-hands-on-walkthrough-de9f1eac768d" target="_blank" rel="noopener noreferrer">medium.com</a></li>
+                    <li><a href="https://www.alongside.team/blog/chroma-vs-qdrant-production-rag-infrastructure" target="_blank" rel="noopener noreferrer">alongside.team</a></li>
+
+                </ol>
+            </div>
+
+            <!-- Back link — always Learning Log for content-agent articles -->
+            <div style="margin-top: 52px;">
+                <a href="index.html#learning-log" class="back-link">← Back to Learning Log</a>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer — verbatim from supervised-learning-models.html. Do not alter. -->
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="mailto:anudeepreddy332@gmail.com" aria-label="Email">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                </a>
+                <a href="https://linkedin.com/in/anudeep-reddy-mutyala" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+                        <rect x="2" y="9" width="4" height="12"/>
+                        <circle cx="4" cy="4" r="2"/>
+                    </svg>
+                </a>
+                <a href="https://github.com/anudeepreddy332" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+                    </svg>
+                </a>
+            </div>
+            <p class="copyright">&copy; 2026 The Machinist. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Shared scripts — must be at end of body, after all content -->
+    <script src="./shared.js"></script>
+
+    <!-- LD+JSON structured data — inject TOPIC and SLUG -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": "When to Use ChromaDB vs Qdrant: A Practical Guide for Production RAG and Agentic AI Systems | The Machinist",
+      "author": {
+        "@type": "Person",
+        "name": "Anudeep Reddy",
+        "url": "https://themachinist.org"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "The Machinist",
+        "url": "https://themachinist.org"
+      },
+      "url": "https://themachinist.org/when-to-use-chromadb-vs-qdrant-a-practical-guide-for-production-rag-and-agentic-.html"
+    }
+    </script>
+</body>
+</html>
